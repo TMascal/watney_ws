@@ -8,18 +8,14 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(OpenCV REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
   set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
@@ -27,11 +23,19 @@ endif()
 # Add executable target with source files
 add_executable(arducam_driver src/arducam_driver.cpp)
 
-# Link OpenCV libraries
-target_link_libraries(arducam_driver ${OpenCV_LIBS})
-
+# Link libraries for the target
+ament_target_dependencies(arducam_driver
+        "rclcpp"
+        "sensor_msgs"
+        "cv_bridge"
+        "OpenCV"
+)
 # Install the executable
 install(TARGETS arducam_driver
         DESTINATION lib/${PROJECT_NAME})
+
+add_executable(c2_cam_viewer src/c2_cam_viewer.cpp)
+ament_target_dependencies(c2_cam_viewer rclcpp sensor_msgs cv_bridge OpenCV)
+install(TARGETS c2_cam_viewer DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

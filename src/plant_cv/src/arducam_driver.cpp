@@ -6,48 +6,41 @@
 
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/image.hpp"
+#include <cv_bridge/cv_bridge.h>
 
-int main() {
-    // Open the default camera (usually the laptop's webcam)
+int main(int argc, char * argv[]) {
+    rclcpp::init(argc, argv);
+    auto node = rclcpp::Node::make_shared("image_publisher_node");
+    auto publisher = node->create_publisher<sensor_msgs::msg::Image>("camera/image_raw", 10);
+
     cv::VideoCapture cap(2);
     if (!cap.isOpened()) {
-        std::cerr << "Error: Could not open camera." << std::endl;
+        RCLCPP_ERROR(node->get_logger(), "Could not open camera.");
         return -1;
     }
 
-
-    // Set camera resolution
-    int width = 1920;  // Desired width
-    int height = 1080;  // Desired height
+    int width = 1920;
+    int height = 1080;
     cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, height);
 
-    cv::namedWindow("Camera Feed", cv::WINDOW_AUTOSIZE);
-
-    while (true) {
-        cv::Mat frame;
-        // Capture a frame
+    cv::Mat frame;
+    while (rclcpp::ok()) {
         cap >> frame;
-
-        // Check if frame is empty
         if (frame.empty()) {
-            std::cerr << "Error: Could not grab a frame." << std::endl;
+            RCLCPP_ERROR(node->get_logger(), "Could not grab a frame.");
             break;
         }
 
-        // Display the frame
-        cv::imshow("Camera Feed", frame);
+        auto msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", frame).toImageMsg();
+        publisher->publish(*msg);
 
-        // Wait for 'q' key press for 30 ms. If 'q' key is pressed, break loop
-        if (cv::waitKey(30) == 'q') {
-            break;
-        }
-
+        rclcpp::spin_some(node);
     }
 
-    // Release the camera or video cap
     cap.release();
-    cv::destroyAllWindows();
-
+    rclcpp::shutdown();
     return 0;
 }
