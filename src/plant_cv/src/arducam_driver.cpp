@@ -21,6 +21,8 @@ int main(int argc, char * argv[]) {
         return -1;
     }
 
+    // Supported Resolutions
+    // 1920 x 1080, 1280 x 720,
     int width = 1920;
     int height = 1080;
     cap.set(cv::CAP_PROP_FRAME_WIDTH, width);
