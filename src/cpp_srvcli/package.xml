@@ -4,13 +4,13 @@
   <name>cpp_srvcli</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="mascalt@my.erau.edu">mark</maintainer>
+  <maintainer email="mascalt@my.erau.edu">Tim Mascal</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
-  <depend>example_interfaces</depend>
+  <depend>tutorial_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
