@@ -23,33 +23,13 @@ private:
     // Callback function for processing incoming image messages
     void topic_callback(const sensor_msgs::msg::Image::SharedPtr msg)
     {
-        RCLCPP_INFO(this->get_logger(), "Received an image:");
-        RCLCPP_INFO(this->get_logger(), "Width: %d, Height: %d, Encoding: %s",
-                    msg->width, msg->height, msg->encoding.c_str());
-
         try
         {
             // Convert ROS image message to OpenCV Mat using cv_bridge
-            cv::Mat cv_image = cv_bridge::toCvCopy(msg, msg->encoding)->image;
+            latest_image_ = cv_bridge::toCvCopy(msg, msg->encoding)->image;
 
-            // Save the image into one of the three cv::Mat variables
-            if (image_counter_ == 0)
-            {
-                image1_ = cv_image;
-            }
-            else if (image_counter_ == 1)
-            {
-                image2_ = cv_image;
-            }
-            else if (image_counter_ == 2)
-            {
-                image3_ = cv_image;
-            }
-
-            // Update counter to cycle between 0, 1, and 2
-            image_counter_ = (image_counter_ + 1) % 3;
-
-            RCLCPP_INFO(this->get_logger(), "Image saved to slot %d.", image_counter_);
+            // Log info about the received image
+            RCLCPP_INFO(this->get_logger(), "Received and converted an image.");
         }
         catch (const cv_bridge::Exception &e)
         {
@@ -58,8 +38,54 @@ private:
         }
     }
 
+
+public:
+    // Generate an HDR Photo
+    int generate_hdr_photo()
+    {
+        try
+        {
+            // Ensure that a valid image has been received
+            if (latest_image_.empty())
+            {
+                RCLCPP_WARN(this->get_logger(), "No valid image data available.");
+                return -1; // Return failure if no image is available
+            }
+
+            // Save the image into one of the three cv::Mat variables
+            if (image_counter_ == 0)
+            {
+                image1_ = latest_image_;
+            }
+            else if (image_counter_ == 1)
+            {
+                image2_ = latest_image_;
+            }
+            else if (image_counter_ == 2)
+            {
+                image3_ = latest_image_;
+            }
+
+            // Update counter to cycle between 0, 1, and 2
+            image_counter_ = (image_counter_ + 1) % 3;
+
+            RCLCPP_INFO(this->get_logger(), "Image saved to slot %d.", image_counter_);
+        }
+        catch (const std::exception &e)
+        {
+            // Log any generic errors
+            RCLCPP_ERROR(this->get_logger(), "Exception: %s", e.what());
+        }
+
+        return 0; // Indicate success
+    }
+
+
     // ROS 2 subscription
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_;
+
+    // Placeholder for the latest image
+    cv::Mat latest_image_;
 
     // OpenCV Mats to store the last three images
     cv::Mat image1_, image2_, image3_;
@@ -68,10 +94,20 @@ private:
     int image_counter_;
 };
 
-int main(int argc, char *argv[])
-{
-    rclcpp::init(argc, argv);                                    // Initialize ROS 2
-    rclcpp::spin(std::make_shared<ImageSubscriber>());           // Run the ImageSubscriber node
-    rclcpp::shutdown();                                          // Shutdown ROS 2
+int main(int argc, char **argv) {
+    // Initialize the ROS 2 framework
+    rclcpp::init(argc, argv);
+
+    // Create the ImageSubscriber node
+    auto image_subscriber_node = std::make_shared<ImageSubscriber>();
+
+    // Call a method from the ImageSubscriber class
+    image_subscriber_node->generate_hdr_photo();
+
+    // Run the ImageSubscriber node
+    rclcpp::spin(image_subscriber_node);
+
+    // Clean up and shut down ROS 2
+    rclcpp::shutdown();
     return 0;
 }

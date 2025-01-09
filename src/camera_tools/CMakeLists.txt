@@ -27,6 +27,16 @@ ament_target_dependencies(hdr_photo
         OpenCV
 )
 
+add_executable(take_picture_server src/take_picture_server.cpp)
+ament_target_dependencies(take_picture_server
+        rclcpp
+        sensor_msgs
+        OpenCV
+        cv_bridge
+        camera_tools_interfaces
+)
+
+
 # Testing dependencies (if any tests were added)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -39,6 +49,7 @@ endif()
 install(TARGETS
         server
         hdr_photo  # Ensure the hdr_photo executable is installed
+        take_picture_server
         DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
