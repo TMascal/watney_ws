@@ -16,16 +16,15 @@ void changeExposure(const std::shared_ptr<camera_tools_interfaces::srv::ChangeEx
     response->success = true;
 
     // Video Device
-    int video_device = 2;
+    int video_device = 0;
 
-    // Define Command Variable
+    // Define Command Variable to Set Exposure Mode to Manual
     std::stringstream enable_command_stream;
     enable_command_stream << "v4l2-ctl -d /dev/video" << video_device << " -c auto_exposure=1" ; // index 1 sets exposure mode to manual
     std::string enable_command = enable_command_stream.str();
 
     // Execute Command and recored response
     int enable_returnCode = std::system(enable_command.c_str());
-
     RCLCPP_INFO(rclcpp::get_logger("change_exposure"), "Command executed with return code: %d", enable_returnCode);
 
     // Define Command Variable
@@ -57,7 +56,7 @@ int main(int argc, char **argv)
     rclcpp::Service<camera_tools_interfaces::srv::ChangeExposure>::SharedPtr service =
       node->create_service<camera_tools_interfaces::srv::ChangeExposure>("change_exposure", &changeExposure);
 
-    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Ready to recieve command");
+    RCLCPP_INFO(rclcpp::get_logger("change_exposure"), "Ready to recieve command");
 
     rclcpp::spin(node);
     rclcpp::shutdown();
