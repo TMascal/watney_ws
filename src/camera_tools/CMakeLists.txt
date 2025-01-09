@@ -5,16 +5,29 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
+# Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(camera_tools_interfaces REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(OpenCV REQUIRED)
 
+# Add the change_exposure_server executable
 add_executable(server src/change_exposure_server.cpp)
 ament_target_dependencies(server
         rclcpp camera_tools_interfaces)
 
+# Add the hdr_photo executable
+add_executable(hdr_photo src/hdr_photo.cpp)  # Add the new hdr_photo executable
+ament_target_dependencies(hdr_photo
+        rclcpp
+        sensor_msgs
+        cv_bridge
+        OpenCV
+)
 
+# Testing dependencies (if any tests were added)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
@@ -22,8 +35,10 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+# Install the targets
 install(TARGETS
         server
+        hdr_photo  # Ensure the hdr_photo executable is installed
         DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
