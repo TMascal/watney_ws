@@ -15,7 +15,7 @@ int main(int argc, char * argv[]) {
     auto node = rclcpp::Node::make_shared("image_publisher_node");
     auto publisher = node->create_publisher<sensor_msgs::msg::Image>("camera/image_raw", 10);
 
-    cv::VideoCapture cap(2);
+    cv::VideoCapture cap(0, cv::CAP_V4L2);
     if (!cap.isOpened()) {
         RCLCPP_ERROR(node->get_logger(), "Could not open camera.");
         return -1;
@@ -36,9 +36,12 @@ int main(int argc, char * argv[]) {
             break;
         }
 
+        // Query the current exposure
+        double exposure = cap.get(cv::CAP_PROP_EXPOSURE);
+        RCLCPP_INFO(node->get_logger(), "Exposure time: %f", exposure);
+
         auto msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", frame).toImageMsg();
         publisher->publish(*msg);
-
         rclcpp::spin_some(node);
     }
 
