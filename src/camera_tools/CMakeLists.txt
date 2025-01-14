@@ -14,8 +14,8 @@ find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 
 # Add the change_exposure_server executable
-add_executable(server src/change_exposure_server.cpp)
-ament_target_dependencies(server
+add_executable(exposure_server src/change_exposure_server.cpp)
+ament_target_dependencies(exposure_server
         rclcpp camera_tools_interfaces)
 
 # Add the hdr_photo executable
@@ -47,7 +47,7 @@ endif()
 
 # Install the targets
 install(TARGETS
-        server
+        exposure_server
         hdr_photo  # Ensure the hdr_photo executable is installed
         take_picture_server
         DESTINATION lib/${PROJECT_NAME})

@@ -38,7 +38,7 @@ private:
 
     // Define the request to change exposure
     auto exposure_request = std::make_shared<camera_tools_interfaces::srv::ChangeExposure::Request>();
-    exposure_request->exposure_value = 100; // Example exposure value (modify as needed).
+    exposure_request->exposure_value = request->exposure_value; //Pull Exposure Value from request
 
     // Call the change_exposure service
     RCLCPP_INFO(this->get_logger(), "Calling change_exposure service...");
@@ -69,7 +69,7 @@ private:
 
     // Video capturing logic
     cv::Mat frame;
-    cv::VideoCapture cap(0); // Open the default camera (index 0)
+    cv::VideoCapture cap(2); // Open the default camera (index 0)
 
     if (!cap.isOpened()) {
         RCLCPP_ERROR(this->get_logger(), "Failed to open the camera.");
