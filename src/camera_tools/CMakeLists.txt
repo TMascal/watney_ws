@@ -12,6 +12,7 @@ find_package(camera_tools_interfaces REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(std_srvs REQUIRED)
 
 # Add the change_exposure_server executable
 add_executable(change_exposure_server src/change_exposure_server.cpp)
@@ -25,6 +26,8 @@ ament_target_dependencies(hdr_photo
         sensor_msgs
         cv_bridge
         OpenCV
+        std_srvs
+        camera_tools_interfaces
 )
 
 add_executable(take_picture_server src/take_picture_server.cpp)
