@@ -11,6 +11,8 @@ void changeExposure(const std::shared_ptr<camera_tools_interfaces::srv::ChangeEx
           std::shared_ptr<camera_tools_interfaces::srv::ChangeExposure::Response> response)
 {
 
+    (void)(request); // This ignores 'request' but silences unused-variable warnings.
+
     // Inputs
     int new_exposure_value = request->exposure_value;
     response->success = false;
@@ -37,7 +39,7 @@ void changeExposure(const std::shared_ptr<camera_tools_interfaces::srv::ChangeEx
 
     // Check if the command was executed successfully
     if (returnCode == 0) {
-        response->success = true;
+        response->success = false;
         RCLCPP_INFO(rclcpp::get_logger("change_exposure"), "Command executed successfully, exposure set to: %d", new_exposure_value);
     } else {
         response->success = false;

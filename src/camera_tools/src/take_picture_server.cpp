@@ -26,8 +26,6 @@ private:
     void handle_request(const std::shared_ptr<camera_tools_interfaces::srv::TakePicture::Request> request,
                     std::shared_ptr<camera_tools_interfaces::srv::TakePicture::Response> response)
 {
-    (void)request; // Acknowledge that the request was received, but it is empty, so it is ignored.
-
     // Video capturing logic
     cv::Mat frame;
     cv::VideoCapture cap(2); // Open the default camera (index 0)
