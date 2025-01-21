@@ -8,6 +8,7 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclpy REQUIRED)
 find_package(camera_tools_interfaces REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
@@ -20,8 +21,8 @@ ament_target_dependencies(change_exposure_server
         rclcpp camera_tools_interfaces)
 
 # Add the hdr_photo executable
-add_executable(hdr_photo src/hdr_photo.cpp)  # Add the new hdr_photo executable
-ament_target_dependencies(hdr_photo
+add_executable(hdr_photo_server src/hdr_photo.cpp)  # Add the new hdr_photo executable
+ament_target_dependencies(hdr_photo_server
         rclcpp
         sensor_msgs
         cv_bridge
@@ -48,11 +49,16 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+
 # Install the targets
 install(TARGETS
         change_exposure_server
-        hdr_photo  # Ensure the hdr_photo executable is installed
+        hdr_photo_server  # Ensure the hdr_photo executable is installed
         take_picture_server
+        DESTINATION lib/${PROJECT_NAME})
+
+install(PROGRAMS
+        scripts/hdr_photo.py
         DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
