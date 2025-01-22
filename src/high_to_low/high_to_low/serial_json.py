@@ -2,6 +2,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from sensor_msgs.msg import Imu
+from geometry_msgs.msg import Twist
 import serial
 import threading
 import argparse
@@ -13,6 +14,7 @@ class SerialNode(Node):
         self.publisher_ = self.create_publisher(String, '/ugv/read', 10) #continuosly publish to read
         self.subscription = self.create_subscription(String, '/ugv/write', self.write_serial, 10) # setup callback to write_serial
         self.imu_publisher = self.create_publisher(Imu, '/ugv/imu', 10) # publish imu data to /ugv/imu topic
+        self.twist_publisher = self.create_publisher(Twist, '/ugv/cmd_vel', 10) # publish twist data to /ugv/cmd_vel topic
         self.subscription  # prevent unused variable warning
         self.ser = serial.Serial(port, baudrate, dsrdtr=None)
         self.ser.setRTS(False)
@@ -36,7 +38,7 @@ class SerialNode(Node):
             if 'T' in json_data:
                 t_value = json_data['T']
                 handlers = {
-                    1002: self.handle_1002,
+                    1001: self.handle_1001,
                     # Add more handlers as needed
                 }
                 handler = handlers.get(t_value, self.handle_default)
@@ -47,17 +49,18 @@ class SerialNode(Node):
         except json.JSONDecodeError as e:
             self.get_logger().error(f"Failed to decode JSON: {e}")
 
-    def handle_1002(self, json_data):
-        self.get_logger().info("Handling T=1002")
+    def handle_1001(self, json_data):
+        self.get_logger().info("Handling T=1001")
         imu_msg = Imu()
+        twist_msg = Twist()
             
         imu_msg.header.stamp = self.get_clock().now().to_msg()
         imu_msg.header.frame_id = "imu_frame"
             
-        imu_msg.orientation.x = 0.0  # Find a way to populate these. Could use a service that requests a few different messages.
-        imu_msg.orientation.y = 0.0
-        imu_msg.orientation.z = 0.0
-        imu_msg.orientation.w = 1.0
+        imu_msg.orientation.x = json_data.get('q1', 0.0)  # Find a way to populate these. Could use a service that requests a few different messages.
+        imu_msg.orientation.y = json_data.get('q2', 0.0) 
+        imu_msg.orientation.z = json_data.get('q3', 0.0) 
+        imu_msg.orientation.w = json_data.get('q0', 0.0) 
             
         imu_msg.angular_velocity.x = json_data.get('gx', 0.0)
         imu_msg.angular_velocity.y = json_data.get('gy', 0.0)
@@ -67,7 +70,11 @@ class SerialNode(Node):
         imu_msg.linear_acceleration.y = json_data.get('ay', 0.0)
         imu_msg.linear_acceleration.z = json_data.get('az', 0.0)
             
+        twist_msg.linear.x = json_data.get('vX', 0.0)
+        twist_msg.angular.z = json_data.get('W', 0.0)
+
         self.imu_publisher.publish(imu_msg)
+        self.twist_publisher.publish(twist_msg)
         #self.get_logger().info(f"Published IMU data: {imu_msg}")
 
     def handle_default(self, json_data):
