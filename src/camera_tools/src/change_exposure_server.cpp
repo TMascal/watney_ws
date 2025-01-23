@@ -11,7 +11,7 @@ void changeExposure(const std::shared_ptr<camera_tools_interfaces::srv::ChangeEx
           std::shared_ptr<camera_tools_interfaces::srv::ChangeExposure::Response> response)
 {
 
-    (void)(request); // This ignores 'request' but silences unused-variable warnings.
+    (void)request; // This ignores 'request' but silences unused-variable warnings.
 
     // Inputs
     int new_exposure_value = request->exposure_value;
