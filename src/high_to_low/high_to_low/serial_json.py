@@ -27,6 +27,11 @@ class SerialNode(Node):
         self.x = 0.0
         self.y = 0.0
         self.theta = 0.0
+        self.prev_linear_velocity = 0.0
+        self.prev_angular_velocity = 0.0
+        self.prev_roll = 0.0
+        self.prev_pitch = 0.0
+        self.prev_yaw = 0.0
 
     def read_serial(self):
         while rclpy.ok():
@@ -64,13 +69,22 @@ class SerialNode(Node):
         linear_velocity = (rVel + lVel) / 2
         angular_velocity = (rVel - lVel) / width
 
-        self.theta += angular_velocity * dt
-        self.x += linear_velocity * math.cos(self.theta) * dt
-        self.y += linear_velocity * math.sin(self.theta) * dt
+        # Trapezoidal rule for integration
+        self.theta += (self.prev_angular_velocity + angular_velocity) / 2 * dt
+        self.x += (self.prev_linear_velocity + linear_velocity) / 2 * math.cos(self.theta) * dt
+        self.y += (self.prev_linear_velocity + linear_velocity) / 2 * math.sin(self.theta) * dt
 
-        roll = float(json_data.get('gx', 0.0)) * dt
-        pitch = float(json_data.get('gy', 0.0)) * dt
-        yaw = self.theta
+        self.prev_linear_velocity = linear_velocity
+        self.prev_angular_velocity = angular_velocity
+
+        # Double check units for these if values seem wrong
+        roll = (self.prev_roll + float(json_data.get('gx', 0.0)) * dt) / 2
+        pitch = (self.prev_pitch + float(json_data.get('gy', 0.0)) * dt) / 2
+        yaw = (self.prev_yaw + float(json_data.get('gz', 0.0)) * dt) / 2
+
+        self.prev_roll = roll
+        self.prev_pitch = pitch
+        self.prev_yaw = yaw
 
         qx = math.sin(roll / 2.0) * math.cos(pitch / 2.0) * math.cos(yaw / 2.0) - math.cos(roll / 2.0) * math.sin(pitch / 2.0) * math.sin(yaw / 2.0)
         qy = math.cos(roll / 2.0) * math.sin(pitch / 2.0) * math.cos(yaw / 2.0) + math.sin(roll / 2.0) * math.cos(pitch / 2.0) * math.sin(yaw / 2.0)
