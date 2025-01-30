@@ -11,7 +11,7 @@ import math
 
 class SerialNode(Node):
     def __init__(self, port, baudrate):
-        super().__init__('high_to_low_serial_node')
+        super().__init__('h2l_node')
         self.publisher_ = self.create_publisher(String, '/ugv/read', 10)
         self.subscription = self.create_subscription(String, '/ugv/write', self.write_serial, 10)
         self.odom_publisher = self.create_publisher(Odometry, '/ugv/odom', 10)
