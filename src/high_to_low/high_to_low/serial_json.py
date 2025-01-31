@@ -9,6 +9,7 @@ import serial
 import threading
 import argparse
 import json
+import math
 
 class SerialNode(Node):
     def __init__(self, port, baudrate):
@@ -16,7 +17,7 @@ class SerialNode(Node):
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
         self.imu_publisher = self.create_publisher(Imu, '/h2l_node/imu/raw', 10)
-        self.mag_publisher = self.create_publisher(MagneticField, '/h2l_node/imu/mag/', 10)
+        self.mag_publisher = self.create_publisher(MagneticField, '/h2l_node/imu/mag', 10)
         self.twist_publisher = self.create_publisher(TwistWithCovarianceStamped, '/h2l_node/wheel_velocity', 10)
         self.cmd_vel_subscription = self.create_subscription(Twist, '/h2l_node/cmd_vel', self.handle_cmd_vel, 10)
         self.write_subscription  # prevent unused variable warning
@@ -83,15 +84,15 @@ class SerialNode(Node):
         imu_msg.header.frame_id = "imu_link"
         imu_msg.orientation_covariance = [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-        imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0))
-        imu_msg.angular_velocity.y = float(json_data.get('gy', 0.0))
-        imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0))
-        imu_msg.angular_velocity_covariance = [0.02, 0, 0, 0, 0.02, 0, 0, 0, 0.02] # Filler Values
+        imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0)) * (math.pi / 180.0)
+        imu_msg.angular_velocity.y = float(json_data.get('gy', 0.0)) * (math.pi / 180.0)
+        imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0)) * (math.pi / 180.0)
+        imu_msg.angular_velocity_covariance = [0.02, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.02] # Filler Values
 
-        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0))
-        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0))
-        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0))
-        imu_msg.linear_acceleration_covariance = [0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1] # Filler Values
+        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / 10000 * 9.81
+        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / 10000 * 9.81
+        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / 10000 * 9.81
+        imu_msg.linear_acceleration_covariance = [0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1]  # Filler Values
 
         self.imu_publisher.publish(imu_msg)
 
@@ -101,21 +102,23 @@ class SerialNode(Node):
         mag_msg.magnetic_field.x = float(json_data.get('mx', 0.0))
         mag_msg.magnetic_field.y = float(json_data.get('my', 0.0))
         mag_msg.magnetic_field.z = float(json_data.get('mz', 0.0))
-        mag_msg.magnetic_field_covariance = [0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.05] # Filler Values
+        mag_msg.magnetic_field_covariance = [0.05, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.05]  # Filler Values
 
         self.mag_publisher.publish(mag_msg)
 
         twist_msg = TwistWithCovarianceStamped()
         twist_msg.header.stamp = current_time.to_msg()
         twist_msg.header.frame_id = "base_link"
-        twist_msg.twist.linear.x = linear_velocity_x
-        twist_msg.twist.angular.z = angular_velocity_z
-        twist_msg.twist.covariance = [0.01, 0, 0, 0, 0, 0,   # Covariance for linear X
-                                      0, 0.1, 0, 0, 0, 0,   # Covariance for linear Y (ignored)
-                                      0, 0, 0.1, 0, 0, 0,   # Covariance for linear Z (ignored)
-                                      0, 0, 0, 0.1, 0, 0,   # Covariance for angular X (ignored)
-                                      0, 0, 0, 0, 0.1, 0,   # Covariance for angular Y (ignored)
-                                      0, 0, 0, 0, 0, 0.05]  # Covariance for yaw rate (tune as needed)
+        twist_msg.twist.twist.linear.x = linear_velocity_x
+        twist_msg.twist.twist.angular.z = angular_velocity_z
+        twist_msg.twist.covariance = [
+            0.01, 0.0, 0.0, 0.0, 0.0, 0.0,   # Covariance for linear X
+            0.0, 0.1, 0.0, 0.0, 0.0, 0.0,   # Covariance for linear Y (ignored)
+            0.0, 0.0, 0.1, 0.0, 0.0, 0.0,   # Covariance for linear Z (ignored)
+            0.0, 0.0, 0.0, 0.1, 0.0, 0.0,   # Covariance for angular X (ignored)
+            0.0, 0.0, 0.0, 0.0, 0.1, 0.0,   # Covariance for angular Y (ignored)
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.05   # Covariance for yaw rate (tune as needed)
+        ]
 
         self.twist_publisher.publish(twist_msg)
 
