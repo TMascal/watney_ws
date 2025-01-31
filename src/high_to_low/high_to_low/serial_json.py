@@ -14,10 +14,10 @@ import tf_transformations
 class SerialNode(Node):
     def __init__(self, port, baudrate):
         super().__init__('h2l_node')
-        self.read_publisher = self.create_publisher(String, '/ugv/read', 10)
-        self.write_subscription = self.create_subscription(String, '/ugv/write', self.write_serial, 10)
-        self.odom_publisher = self.create_publisher(Odometry, '/ugv/odom', 10)
-        self.cmd_vel_subscription = self.create_subscription(Twist, '/ugv/cmd_vel', self.handle_cmd_vel, 10)
+        self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
+        self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
+        self.odom_publisher = self.create_publisher(Odometry, '/h2l_node/odom', 10)
+        self.cmd_vel_subscription = self.create_subscription(Twist, '/h2l_node/cmd_vel', self.handle_cmd_vel, 10)
         self.write_subscription  # prevent unused variable warning
         self.ser = serial.Serial(port, baudrate, dsrdtr=None)
         self.ser.setRTS(False)
