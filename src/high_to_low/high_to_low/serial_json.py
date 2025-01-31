@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from sensor_msgs.msg import imu
+from sensor_msgs.msg import Imu
 from sensor_msgs.msg import MagneticField
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from geometry_msgs.msg import Twist
@@ -15,7 +15,7 @@ class SerialNode(Node):
         super().__init__('h2l_node')
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
-        self.imu_publisher = self.create_publisher(imu, '/h2l_node/imu/raw', 10)
+        self.imu_publisher = self.create_publisher(Imu, '/h2l_node/imu/raw', 10)
         self.mag_publisher = self.create_publisher(MagneticField, '/h2l_node/imu/mag/', 10)
         self.twist_publisher = self.create_publisher(TwistWithCovarianceStamped, '/h2l_node/wheel_velocity', 10)
         self.cmd_vel_subscription = self.create_subscription(Twist, '/h2l_node/cmd_vel', self.handle_cmd_vel, 10)
@@ -78,7 +78,7 @@ class SerialNode(Node):
         linear_velocity_x = (rVel + lVel) / 2
         angular_velocity_z = (rVel - lVel) / width
 
-        imu_msg = imu()
+        imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
         imu_msg.header.frame_id = "imu_link"
         imu_msg.orientation_covariance = [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
