@@ -1,22 +1,23 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Quaternion
+from sensor_msgs.msg import imu
+from sensor_msgs.msg import MagneticField
+from geometry_msgs.msg import TwistWithCovarianceStamped
 from geometry_msgs.msg import Twist
 import serial
 import threading
 import argparse
 import json
-import math
-import tf_transformations
 
 class SerialNode(Node):
     def __init__(self, port, baudrate):
         super().__init__('h2l_node')
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
-        self.odom_publisher = self.create_publisher(Odometry, '/h2l_node/odom', 10)
+        self.imu_publisher = self.create_publisher(imu, '/h2l_node/imu/raw', 10)
+        self.mag_publisher = self.create_publisher(MagneticField, '/h2l_node/imu/mag/', 10)
+        self.twist_publisher = self.create_publisher(TwistWithCovarianceStamped, '/h2l_node/wheel_velocity', 10)
         self.cmd_vel_subscription = self.create_subscription(Twist, '/h2l_node/cmd_vel', self.handle_cmd_vel, 10)
         self.write_subscription  # prevent unused variable warning
         self.ser = serial.Serial(port, baudrate, dsrdtr=None)
@@ -27,14 +28,6 @@ class SerialNode(Node):
         self.serial_recv_thread.start()
 
         self.last_time = self.get_clock().now()
-        self.x = 0.0
-        self.y = 0.0
-        self.theta = 0.0
-        self.prev_linear_velocity = 0.0
-        self.prev_angular_velocity = 0.0
-        self.prev_roll = 0.0
-        self.prev_pitch = 0.0
-        self.prev_yaw = 0.0
 
         self.get_logger().info(f"Connection Complete. Values Initialized. There you are. Deploying!")
 
@@ -76,56 +69,55 @@ class SerialNode(Node):
         # self.get_logger().info("Handling T=1001")
 
         current_time = self.get_clock().now()
-        dt = (current_time - self.last_time).nanoseconds / 1e9
         self.last_time = current_time
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
         width = 0.172
 
-        linear_velocity = (rVel + lVel) / 2
-        angular_velocity = (rVel - lVel) / width
+        linear_velocity_x = (rVel + lVel) / 2
+        angular_velocity_z = (rVel - lVel) / width
 
-        # Trapezoidal rule for integration
-        self.theta += (self.prev_angular_velocity + angular_velocity) / 2 * dt
-        self.x += (self.prev_linear_velocity + linear_velocity) / 2 * math.cos(self.theta) * dt
-        self.y += (self.prev_linear_velocity + linear_velocity) / 2 * math.sin(self.theta) * dt
+        imu_msg = imu()
+        imu_msg.header.stamp = current_time.to_msg()
+        imu_msg.header.frame_id = "imu_link"
+        imu_msg.orientation_covariance = [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-        self.prev_linear_velocity = linear_velocity
-        self.prev_angular_velocity = angular_velocity
+        imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0))
+        imu_msg.angular_velocity.y = float(json_data.get('gy', 0.0))
+        imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0))
+        imu_msg.angular_velocity_covariance = [0.02, 0, 0, 0, 0.02, 0, 0, 0, 0.02] # Filler Values
 
-        # Double check units for these if values seem wrong
-        roll = (self.prev_roll + float(json_data.get('gx', 0.0))) / 2 * dt
-        pitch = (self.prev_pitch + float(json_data.get('gy', 0.0))) / 2 * dt
-        yaw = (self.prev_yaw + float(json_data.get('gz', 0.0))) / 2 * dt
+        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0))
+        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0))
+        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0))
+        imu_msg.linear_acceleration_covariance = [0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1] # Filler Values
 
-        self.prev_roll = roll
-        self.prev_pitch = pitch
-        self.prev_yaw = yaw
+        self.imu_publisher.publish(imu_msg)
 
-        quaternion = tf_transformations.quaternion_from_euler(roll, pitch, yaw)
-        qx, qy, qz, qw = quaternion
+        mag_msg = MagneticField()
+        mag_msg.header.stamp = current_time.to_msg()
+        mag_msg.header.frame_id = "imu_link"
+        mag_msg.magnetic_field.x = float(json_data.get('mx', 0.0))
+        mag_msg.magnetic_field.y = float(json_data.get('my', 0.0))
+        mag_msg.magnetic_field.z = float(json_data.get('mz', 0.0))
+        mag_msg.magnetic_field_covariance = [0.05, 0, 0, 0, 0.05, 0, 0, 0, 0.05] # Filler Values
 
-        odom_msg = Odometry()
-        odom_msg.header.stamp = current_time.to_msg()
-        odom_msg.header.frame_id = "odom"
-        odom_msg.child_frame_id = "base_link"
+        self.mag_publisher.publish(mag_msg)
 
-        odom_msg.pose.pose.position.x = self.x
-        odom_msg.pose.pose.position.y = self.y
-        odom_msg.pose.pose.position.z = 0.0
+        twist_msg = TwistWithCovarianceStamped()
+        twist_msg.header.stamp = current_time.to_msg()
+        twist_msg.header.frame_id = "base_link"
+        twist_msg.twist.linear.x = linear_velocity_x
+        twist_msg.twist.angular.z = angular_velocity_z
+        twist_msg.twist.covariance = [0.01, 0, 0, 0, 0, 0,   # Covariance for linear X
+                                      0, 0.1, 0, 0, 0, 0,   # Covariance for linear Y (ignored)
+                                      0, 0, 0.1, 0, 0, 0,   # Covariance for linear Z (ignored)
+                                      0, 0, 0, 0.1, 0, 0,   # Covariance for angular X (ignored)
+                                      0, 0, 0, 0, 0.1, 0,   # Covariance for angular Y (ignored)
+                                      0, 0, 0, 0, 0, 0.05]  # Covariance for yaw rate (tune as needed)
 
-        odom_msg.pose.pose.orientation = Quaternion(
-            x=qx,
-            y=qy,
-            z=qz,
-            w=qw
-        )
-
-        odom_msg.twist.twist.linear.x = linear_velocity
-        odom_msg.twist.twist.angular.z = angular_velocity
-
-        self.odom_publisher.publish(odom_msg)
+        self.twist_publisher.publish(twist_msg)
 
     def handle_default(self, json_data):
         pass
