@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
     ],
-    install_requires=['setuptools', 'pyserial'],
+    install_requires=['setuptools', 'pyserial','tf-transformations'],
     zip_safe=True,
     maintainer='jake_161',
     maintainer_email='62108812+jake161@users.noreply.github.com',

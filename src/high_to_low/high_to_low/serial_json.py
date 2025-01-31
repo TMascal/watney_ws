@@ -9,6 +9,7 @@ import threading
 import argparse
 import json
 import math
+import tf_transformations
 
 class SerialNode(Node):
     def __init__(self, port, baudrate):
@@ -92,18 +93,16 @@ class SerialNode(Node):
         self.prev_angular_velocity = angular_velocity
 
         # Double check units for these if values seem wrong
-        roll = (self.prev_roll + float(json_data.get('gx', 0.0)) * dt) / 2
-        pitch = (self.prev_pitch + float(json_data.get('gy', 0.0)) * dt) / 2
-        yaw = (self.prev_yaw + float(json_data.get('gz', 0.0)) * dt) / 2
+        roll = (self.prev_roll + float(json_data.get('gx', 0.0))) / 2 * dt
+        pitch = (self.prev_pitch + float(json_data.get('gy', 0.0))) / 2 * dt
+        yaw = (self.prev_yaw + float(json_data.get('gz', 0.0))) / 2 * dt
 
         self.prev_roll = roll
         self.prev_pitch = pitch
         self.prev_yaw = yaw
 
-        qx = math.sin(roll / 2.0) * math.cos(pitch / 2.0) * math.cos(yaw / 2.0) - math.cos(roll / 2.0) * math.sin(pitch / 2.0) * math.sin(yaw / 2.0)
-        qy = math.cos(roll / 2.0) * math.sin(pitch / 2.0) * math.cos(yaw / 2.0) + math.sin(roll / 2.0) * math.cos(pitch / 2.0) * math.sin(yaw / 2.0)
-        qz = math.cos(roll / 2.0) * math.cos(pitch / 2.0) * math.sin(yaw / 2.0) - math.sin(roll / 2.0) * math.sin(pitch / 2.0) * math.cos(yaw / 2.0)
-        qw = math.cos(roll / 2.0) * math.cos(pitch / 2.0) * math.cos(yaw / 2.0) + math.sin(roll / 2.0) * math.sin(pitch / 2.0) * math.sin(yaw / 2.0)
+        quaternion = tf_transformations.quaternion_from_euler(roll, pitch, yaw)
+        qx, qy, qz, qw = quaternion
 
         odom_msg = Odometry()
         odom_msg.header.stamp = current_time.to_msg()
