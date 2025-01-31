@@ -36,11 +36,13 @@ class SerialNode(Node):
         self.prev_pitch = 0.0
         self.prev_yaw = 0.0
 
+        self.get_logger().info(f"Connection Complete. Values Initialized. There you are. Deploying!")
+
     def read_serial(self):
         while rclpy.ok():
             data = self.ser.readline().decode('utf-8')
             if data:
-                self.get_logger().info(f"Received: {data}")
+                # self.get_logger().info(f"Received: {data}")
                 msg = String()
                 msg.data = data
                 self.read_publisher.publish(msg)
@@ -71,7 +73,7 @@ class SerialNode(Node):
         self.write_serial(String(data=json_str))
 
     def handle_1001(self, json_data):
-        self.get_logger().info("Handling T=1001")
+        # self.get_logger().info("Handling T=1001")
 
         current_time = self.get_clock().now()
         dt = (current_time - self.last_time).nanoseconds / 1e9
