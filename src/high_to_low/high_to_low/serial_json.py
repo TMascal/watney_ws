@@ -3,6 +3,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Twist
 import serial
 import threading
 import argparse
@@ -12,10 +13,11 @@ import math
 class SerialNode(Node):
     def __init__(self, port, baudrate):
         super().__init__('h2l_node')
-        self.publisher_ = self.create_publisher(String, '/ugv/read', 10)
-        self.subscription = self.create_subscription(String, '/ugv/write', self.write_serial, 10)
+        self.read_publisher = self.create_publisher(String, '/ugv/read', 10)
+        self.write_subscription = self.create_subscription(String, '/ugv/write', self.write_serial, 10)
         self.odom_publisher = self.create_publisher(Odometry, '/ugv/odom', 10)
-        self.subscription  # prevent unused variable warning
+        self.cmd_vel_subscription = self.create_subscription(Twist, '/ugv/cmd_vel', self.handle_cmd_vel, 10)
+        self.write_subscription  # prevent unused variable warning
         self.ser = serial.Serial(port, baudrate, dsrdtr=None)
         self.ser.setRTS(False)
         self.ser.setDTR(False)
@@ -38,6 +40,9 @@ class SerialNode(Node):
             data = self.ser.readline().decode('utf-8')
             if data:
                 self.get_logger().info(f"Received: {data}")
+                msg = String()
+                msg.data = data
+                self.read_publisher.publish(msg)
                 self.handle_json(data)
 
     def handle_json(self, data):
@@ -54,6 +59,15 @@ class SerialNode(Node):
                 self.get_logger().warning("No 'T' value found in JSON")
         except json.JSONDecodeError as e:
             self.get_logger().error(f"Failed to decode JSON: {e}")
+
+    def handle_cmd_vel(self, msg):
+        json_data = {
+            "T": 13,
+            "X": msg.linear.x,
+            "Z": msg.angular.z
+        }
+        json_str = json.dumps(json_data)
+        self.write_serial(String(data=json_str))
 
     def handle_1001(self, json_data):
         self.get_logger().info("Handling T=1001")
