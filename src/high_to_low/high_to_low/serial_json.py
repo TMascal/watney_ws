@@ -7,13 +7,18 @@ from geometry_msgs.msg import TwistWithCovarianceStamped
 from geometry_msgs.msg import Twist
 import serial
 import threading
-import argparse
 import json
 import math
 
 class SerialNode(Node):
-    def __init__(self, port, baudrate):
+    def __init__(self):
         super().__init__('h2l_node')
+        self.declare_parameter('port', '/dev/serial0')
+        self.declare_parameter('baudrate', 115200)
+
+        port = self.get_parameter('port').get_parameter_value().string_value
+        baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
+
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
         self.imu_publisher = self.create_publisher(Imu, '/h2l_node/imu/raw', 10)
@@ -36,7 +41,6 @@ class SerialNode(Node):
         while rclpy.ok():
             data = self.ser.readline().decode('utf-8')
             if data:
-                # self.get_logger().info(f"Received: {data}")
                 msg = String()
                 msg.data = data
                 self.read_publisher.publish(msg)
@@ -67,8 +71,6 @@ class SerialNode(Node):
         self.write_serial(String(data=json_str))
 
     def handle_1001(self, json_data):
-        # self.get_logger().info("Handling T=1001")
-
         current_time = self.get_clock().now()
         self.last_time = current_time
 
@@ -124,19 +126,13 @@ class SerialNode(Node):
 
     def handle_default(self, json_data):
         pass
-        #self.get_logger().error("T value not in dictionary")
-        # There should always be a value for T
 
     def write_serial(self, msg):
         self.ser.write(msg.data.encode() + b'\n')
 
 def main(args=None):
     rclpy.init(args=args)
-    parser = argparse.ArgumentParser(description='Serial JSON Communication')
-    parser.add_argument('port', type=str, nargs='?', default='/dev/serial0', help='Serial port name (e.g., COM1 or /dev/ttyUSB0)') # /dev/serial0 for RPi 4 UART pins
-    parser.add_argument('baudrate', type=int, nargs='?', default=115200, help='Serial baudrate (e.g., 9600 or 115200)') # 115200 default baudrate for UGV 6x4
-    args = parser.parse_args()
-    serial_node = SerialNode(args.port, args.baudrate)
+    serial_node = SerialNode()
     rclpy.spin(serial_node)
     serial_node.destroy_node()
     rclpy.shutdown()
