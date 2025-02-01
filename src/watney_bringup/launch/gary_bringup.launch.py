@@ -11,10 +11,25 @@ def generate_launch_description():
             executable='serial_json',
             name='h2l_node',
             output='screen',
-            parameters=[{'port': '/dev/serial0','baudrate': 115200}]
+            parameters=[{'port': '/dev/serial0'},{'baudrate': 115200}]
+        ),
+        Node(
+            package='imu_filter_madgwick',
+            executable='imu_filter_madgwick_node',
+            name='imu_filter_node',
+            output='screen',
+            remappings=[('/imu/data_raw','/h2l_node/imu/raw'),('/imu/mag','/h2l_node/imu/mag')]
+        ),
+        Node(
+            package='robot_localization',
+            executable='ekf_node',
+            name='ekf_filter_node',
+            output='screen',
+            parameters=[FindPackageShare('watney_bringup').find('watney_bringup') + '/config/ekf.yaml']
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(FindPackageShare('ldlidar_node').find('ldlidar_node') + '/launch/ldlidar_with_mgr.launch.py'),
             # launch_arguments={'arg_name': 'arg_value'}.items()  # Pass arguments to the included launch file
         ),
+        
     ])
