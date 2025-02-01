@@ -35,7 +35,7 @@ class SerialNode(Node):
 
         self.last_time = self.get_clock().now()
 
-        self.get_logger().info(f"Connection Complete. Values Initialized. There you are. Deploying!")
+        self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
         while rclpy.ok():
