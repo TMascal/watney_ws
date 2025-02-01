@@ -11,7 +11,7 @@ def generate_launch_description():
             executable='serial_json',
             name='h2l_node',
             output='screen',
-            parameters=[{'port': '/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_75834303438351111041-if00'}]
+            parameters=[{'port': '/dev/serial0','baudrate': 115200}]
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(FindPackageShare('ldlidar_node').find('ldlidar_node') + '/launch/ldlidar_with_mgr.launch.py'),
