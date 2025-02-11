@@ -28,7 +28,7 @@ def generate_launch_description():
             parameters=[FindPackageShare('watney_bringup').find('watney_bringup') + '/config/ekf.yaml']
         ),
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(FindPackageShare('ldlidar_node').find('ldlidar_node') + '/launch/ldlidar_with_mgr.launch.py'),
+            PythonLaunchDescriptionSource(FindPackageShare('ldlidar_node').find('ldlidar_node') + '/launch/ldlidar_slam.launch.py'),
             # launch_arguments={'arg_name': 'arg_value'}.items()  # Pass arguments to the included launch file
         ),
         
