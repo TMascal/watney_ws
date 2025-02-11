@@ -27,16 +27,11 @@ def generate_launch_description():
             output='screen',
             parameters=[FindPackageShare('watney_bringup').find('watney_bringup') + '/config/ekf.yaml']
         ),
+        #make this to start LiDAR
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(FindPackageShare('ldlidar_node').find('ldlidar_node') + '/launch/ldlidar_slam.launch.py'),
+            PythonLaunchDescriptionSource(FindPackageShare('watney_bringup').find('watney_bringup') + '/launch/ldlidar_agent.launch.py'),
             # launch_arguments={
             #     'ldlidar_link': 'ldlidar_base'
             # }.items()
-        ),
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(FindPackageShare('nav2_bringup').find('nav2_bringup') + '/launch/navigation_launch.py'),
-            launch_arguments={
-                'use_sim_time': 'false'
-            }.items()
         ),
     ])
