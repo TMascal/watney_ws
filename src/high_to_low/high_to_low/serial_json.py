@@ -83,7 +83,7 @@ class SerialNode(Node):
 
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
-        imu_msg.header.frame_id = "imu_link"
+        imu_msg.header.frame_id = "base_link"
         imu_msg.orientation_covariance = [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0)) * (math.pi / 180.0)
@@ -100,7 +100,7 @@ class SerialNode(Node):
 
         mag_msg = MagneticField()
         mag_msg.header.stamp = current_time.to_msg()
-        mag_msg.header.frame_id = "imu_link"
+        mag_msg.header.frame_id = "base_link"
         mag_msg.magnetic_field.x = float(json_data.get('mx', 0.0))
         mag_msg.magnetic_field.y = float(json_data.get('my', 0.0))
         mag_msg.magnetic_field.z = float(json_data.get('mz', 0.0))
