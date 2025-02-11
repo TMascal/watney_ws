@@ -29,7 +29,13 @@ def generate_launch_description():
         ),
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(FindPackageShare('ldlidar_node').find('ldlidar_node') + '/launch/ldlidar_slam.launch.py'),
-            # launch_arguments={'arg_name': 'arg_value'}.items()  # Pass arguments to the included launch file
+            launch_arguments={
+                'ldlidar_link': 'ldlidar_base',
+                'ldlidar_base': 'odom',
+                'odom': 'map',
+                'map': 'odom',
+                'odom': 'base_link',
+                'base_link': 'laser_frame'
+            }.items()
         ),
-        
     ])
