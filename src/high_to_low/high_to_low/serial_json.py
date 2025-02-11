@@ -38,6 +38,7 @@ class SerialNode(Node):
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
+        feedback_rate_set = False
         while rclpy.ok():
             data = self.ser.readline().decode('utf-8')
             if data:
@@ -45,6 +46,17 @@ class SerialNode(Node):
                 msg.data = data
                 self.read_publisher.publish(msg)
                 self.handle_json(data)
+                if not feedback_rate_set:
+                    self.set_feedback_rate(25)
+                    feedback_rate_set = True
+
+    def set_feedback_rate(self, rate_hz):
+        json_data = {
+            "T": 142,
+            "cmd": int(1000 / rate_hz)  # Convert Hz to milliseconds
+        }
+        json_str = json.dumps(json_data)
+        self.write_serial(String(data=json_str))
 
     def handle_json(self, data):
         try:
