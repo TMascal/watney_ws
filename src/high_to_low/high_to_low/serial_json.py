@@ -48,6 +48,7 @@ class SerialNode(Node):
                 self.handle_json(data)
                 if not feedback_rate_set:
                     self.set_feedback_rate(25)
+                    self.get_logger().info("Feedback frequency set to 25 Hz")
                     feedback_rate_set = True
 
     def set_feedback_rate(self, rate_hz):
