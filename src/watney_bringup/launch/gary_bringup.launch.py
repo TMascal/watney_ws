@@ -38,4 +38,10 @@ def generate_launch_description():
                 'base_link': 'laser_frame'
             }.items()
         ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(FindPackageShare('nav2_bringup').find('nav2_bringup') + '/launch/navigation_launch.py'),
+            launch_arguments={
+                'use_sim_time': 'false'
+            }.items()
+        ),
     ])
