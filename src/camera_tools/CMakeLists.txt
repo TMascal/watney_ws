@@ -59,6 +59,7 @@ install(TARGETS
 
 install(PROGRAMS
         scripts/hdr_photo.py
+        scripts/take_and_store_picture.py
         DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

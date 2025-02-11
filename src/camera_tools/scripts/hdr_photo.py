@@ -1,50 +1,61 @@
 #!/home/mark/ros2-humble-env/bin/python3
 
-# Make sure to use shebang #! instead of a comment # !
-# Created by Tim Mascal on Jan 16, 2025
-# Simple ROS 2 'Hello World' script
+import cv2
+import os
+import numpy as np
 
-import rclpy
-from rclpy.node import Node
+# Configurable directory containing the photos
+photos_directory = "/home/mark/Pictures/hdr"  # Change this to your desired directory
 
-# noinspection PyUnresolvedReferences
-from camera_tools_interfaces.srv import ChangeExposure
-
-
-class HDRNode(Node):
-    def __init__(self):
-        super().__init__('hdr_server_node')  # Node name
-        self.get_logger().info('Starting HDR Server node.')
-
-        # Create Object to Calls ROS2 Service to Change Cam Exposure
-        self.client = self.create_client(ChangeExposure, 'change_exposure')
-        while not self.client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn('The "change_exposure" service is not available yet.')
-
-        # Prepare Service Message Object
-        self.exposure_request = ChangeExposure.Request()
-        self.exposure_request.exposure_value = 100 # Exposure Value is int64 in the ROS2 Service Definition
-
-        self.get_logger().info(f'Sending request: a={self.exposure_request.exposure_value}')
-        response = self.client.call(self.exposure_request)  # Synchronous service call
-
-        self.get_logger().info(response)
-
-        # Process the response
-        if response:
-            self.get_logger().info(f'Received response')
-
-        else:
-            self.get_logger().error('Failed to receive a response')
-
-def main(args=None):
-    rclpy.init(args=args)  # Initialize the ROS 2 Python client
-    node = HDRNode()
-    rclpy.spin(node)  # Keep the node running to process callbacks
-    rclpy.shutdown()  # Shutdown ROS 2
+# Exposure times in seconds
+exposure_times = np.array([0.01, 0.1, 0.2], dtype=np.float32)  # Converted from 100ms, 1000ms, and 2000ms
 
 
-# Run the main function
-if __name__ == '__main__':
-    main()
+def merge_hdr_images(directory):
+    # Collect image paths
+    image_files = [os.path.join(directory, f) for f in sorted(os.listdir(directory)) if
+                   f.endswith((".jpg", ".png", ".jpeg"))]
 
+    # Check if at least three images are present
+    if len(image_files) < 3:
+        print(
+            "Error: Less than three images found in the directory. Please ensure the directory contains at least three photos.")
+        return
+
+    # Read the images into a list
+    images = [cv2.imread(img) for img in image_files[:3]]  # Take the first 3 images
+
+    # Check if any image failed to load
+    if any(image is None for image in images):
+        print("Error: Unable to read one or more images. Please check the image files.")
+        return
+
+    # Ensure the number of exposure times matches the number of images
+    if len(images) != len(exposure_times):
+        print("Error: The number of exposure times does not match the number of input images.")
+        return
+
+    # Merge the images into an HDR photo
+    try:
+        # Convert to HDR using OpenCV
+        merge_debevec = cv2.createMergeDebevec()
+        hdr_image = merge_debevec.process(images, times=exposure_times)
+
+        # Tone mapping for display (converting HDR to 8-bit)
+        # Use cv2.createTonemap() (generic tone-mapper) instead of cv2.createTonemapDurand
+        # tonemap = cv2.createTonemap(gamma=2.2)  # Generic gamma correction tone-mapper
+        tonemap = cv2.createTonemapReinhard(gamma=1.5, intensity=0, light_adapt=0, color_adapt=1.0)
+        # tonemap = cv2.createTonemapDrago(gamma=1.2, saturation=1.0, bias=0.85)
+        ldr_image = tonemap.process(hdr_image)
+        ldr_image = cv2.normalize(ldr_image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC3)
+
+        # Save the resulting image
+        output_path = os.path.join(directory, "result_hdr_image.jpg")
+        cv2.imwrite(output_path, ldr_image)
+        print(f"HDR image successfully saved at: {output_path}")
+    except Exception as e:
+        print(f"Error while generating HDR image: {e}")
+
+
+if __name__ == "__main__":
+    merge_hdr_images(photos_directory)
