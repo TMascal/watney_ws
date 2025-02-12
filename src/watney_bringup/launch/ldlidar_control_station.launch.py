@@ -33,6 +33,6 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(ldlidar_common_launch)
-    ld.add_action(rviz2_node)
+    #ld.add_action(rviz2_node)
 
     return ld

@@ -8,14 +8,17 @@ def generate_launch_description():
     return LaunchDescription([
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(FindPackageShare('watney_bringup').find('watney_bringup') + '/launch/ldlidar_control_station.launch.py'),
-            # launch_arguments={
-            #     'ldlidar_link': 'ldlidar_base'
-            # }.items()
         ),
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(FindPackageShare('nav2_bringup').find('nav2_bringup') + '/launch/navigation_launch.py'),
-                launch_arguments={
-                    'use_sim_time': 'false'
-                }.items()
-            ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(FindPackageShare('nav2_bringup').find('nav2_bringup') + '/launch/navigation_launch.py'),
+            launch_arguments={
+                'use_sim_time': 'false'
+            }.items()
+        ),
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(FindPackageShare('nav2_bringup').find('nav2_bringup') + '/launch/rviz_launch.py'),
+            launch_arguments={
+                'use_sim_time': 'false'
+            }.items()
+        ),
     ])
