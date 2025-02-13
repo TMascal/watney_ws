@@ -266,46 +266,26 @@
   </joint>
   
   <!-- Base Lidar -->
-  <link
-    name="base_lidar_link">
-    <inertial>
-      <origin
-        xyz="-6.93889390390723E-18 -1.81372359302323E-18 0.0165546434494574"
-        rpy="0 0 0" />
-      <mass
-        value="0.0418000091653573" />
-      <inertia
-        ixx="8.26853377699878E-06"
-        ixy="-2.32283058129169E-22"
-        ixz="-3.51417304718746E-22"
-        iyy="8.26853377699876E-06"
-        iyz="2.66754484573224E-23"
-        izz="8.32524607487378E-06" />
-    </inertial>
+  <link name="ldlidar_base">
     <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <mesh
-          filename="package://ugv_description/meshes/ugv_rover/base_lidar_link.stl" />
+        <mesh filename="package://ldlidar_node/urdf/model/LD19.stl" scale="0.001 0.001 0.001" />
       </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      <material name="ldlidar_mat">
+        <color rgba="0.8 0.8 0.8 0.8"/>
       </material>
     </visual>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://ugv_description/meshes/ugv_rover/base_lidar_link.stl" />
-      </geometry>
-    </collision>
   </link>
+
+  <joint name="ldlidar_link_joint" type="fixed">
+    <parent link="ldlidar_base"/>
+    <child link="ldlidar_link"/>
+    <origin xyz="0 0 0.02745" rpy="0 0 0" />
+  </joint>
+
+  <link name="ldlidar_link" />
+
   <joint
     name="base_lidar_link_joint"
     type="fixed">
@@ -315,7 +295,7 @@
     <parent
       link="base_link" />
     <child
-      link="base_lidar_link" />
+      link="ldlidar_base" />
     <axis
       xyz="0 0 0" />
   </joint>

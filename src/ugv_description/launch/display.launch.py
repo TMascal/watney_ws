@@ -21,8 +21,7 @@ def generate_launch_description():
         executable='joint_state_publisher',
         name='joint_state_publisher',
         namespace='ugv',
-        output='screen',
-        parameters=[{'robot_description': open(urdf_model_path).read()}]
+        output='screen'
     )
 
     rviz2_node = Node(
