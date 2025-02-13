@@ -1,61 +1,88 @@
 #!/home/mark/ros2-humble-env/bin/python3
+from urllib import response
 
-import cv2
-import os
-import numpy as np
+import rclpy
+from rclpy.node import Node
 
-# Configurable directory containing the photos
-photos_directory = "/home/mark/Pictures/hdr"  # Change this to your desired directory
+from camera_tools_interfaces.srv import ChangeExposure, TakePicture
 
-# Exposure times in seconds
-exposure_times = np.array([0.01, 0.1, 0.2], dtype=np.float32)  # Converted from 100ms, 1000ms, and 2000ms
+class MyServiceClientNode(Node):
+    def __init__(self):
+        super().__init__('hdr_photo_node')
+
+        # Create the service clients
+        self.client_1 = self.create_client(ChangeExposure, '/change_exposure')
+        self.client_2 = self.create_client(TakePicture, '/take_picture')
+
+        # Make sure the services are available
+        while not self.client_1.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('<service_1_name> is not available, waiting...')
+        while not self.client_2.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('<service_2_name> is not available, waiting...')
+
+        self.get_logger().info('All services available, proceeding with execution')
+
+    def call_service_1(self, request):
+        """
+        Call the first service and handle its response.
+        """
+        future = self.client_1.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.done():
+            try:
+                response = future.result()
+            except Exception as e:
+                self.get_logger().error(f'Error calling service: {e}')
+
+        self.get_logger().info(f'Received response from ChangeExposure: {response.success}')
+
+        return response
 
 
-def merge_hdr_images(directory):
-    # Collect image paths
-    image_files = [os.path.join(directory, f) for f in sorted(os.listdir(directory)) if
-                   f.endswith((".jpg", ".png", ".jpeg"))]
+    def call_service_2(self, request):
+        """
+        Call the second service and handle its response.
+        """
+        future = self.client_2.call_async(request)
+        rclpy.spin_until_future_complete(self, future)
 
-    # Check if at least three images are present
-    if len(image_files) < 3:
-        print(
-            "Error: Less than three images found in the directory. Please ensure the directory contains at least three photos.")
-        return
+        if future.done():
+            try:
+                response = future.result()
+            except Exception as e:
+                self.get_logger().error(f'Error calling service: {e}')
 
-    # Read the images into a list
-    images = [cv2.imread(img) for img in image_files[:3]]  # Take the first 3 images
+        self.get_logger().info('Received response from TakePicture:')
 
-    # Check if any image failed to load
-    if any(image is None for image in images):
-        print("Error: Unable to read one or more images. Please check the image files.")
-        return
+        return response
 
-    # Ensure the number of exposure times matches the number of images
-    if len(images) != len(exposure_times):
-        print("Error: The number of exposure times does not match the number of input images.")
-        return
 
-    # Merge the images into an HDR photo
+    def take_picture(self, exposure_value=0):
+        request = ChangeExposure.Request()
+        request.exposure_value = exposure_value
+        response = self.call_service_1(request)
+
+        pic_request = TakePicture.Request()
+        pic_request.request = True
+        pic_response = self.call_service_2(pic_request)
+        # self.get_logger().info(f'Received response from TakePicture: {response.success}')
+
+        return pic_response.image
+
+
+def main():
+    rclpy.init()
     try:
-        # Convert to HDR using OpenCV
-        merge_debevec = cv2.createMergeDebevec()
-        hdr_image = merge_debevec.process(images, times=exposure_times)
-
-        # Tone mapping for display (converting HDR to 8-bit)
-        # Use cv2.createTonemap() (generic tone-mapper) instead of cv2.createTonemapDurand
-        # tonemap = cv2.createTonemap(gamma=2.2)  # Generic gamma correction tone-mapper
-        tonemap = cv2.createTonemapReinhard(gamma=1.5, intensity=0, light_adapt=0, color_adapt=1.0)
-        # tonemap = cv2.createTonemapDrago(gamma=1.2, saturation=1.0, bias=0.85)
-        ldr_image = tonemap.process(hdr_image)
-        ldr_image = cv2.normalize(ldr_image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC3)
-
-        # Save the resulting image
-        output_path = os.path.join(directory, "result_hdr_image.jpg")
-        cv2.imwrite(output_path, ldr_image)
-        print(f"HDR image successfully saved at: {output_path}")
-    except Exception as e:
-        print(f"Error while generating HDR image: {e}")
+        node = MyServiceClientNode()
+        response = node.take_picture(exposure_value=0)
+        node.get_logger().info(f'Changed exposure: {response}')
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        rclpy.shutdown()
 
 
-if __name__ == "__main__":
-    merge_hdr_images(photos_directory)
+if __name__ == '__main__':
+    main()

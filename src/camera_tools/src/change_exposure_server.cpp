@@ -21,6 +21,24 @@ void changeExposure(const std::shared_ptr<camera_tools_interfaces::srv::ChangeEx
     int video_device = 2;
 
     // Define Command Variable to Set Exposure Mode to Manual
+    if (new_exposure_value == 0) {
+        std::stringstream enable_command_stream;
+        enable_command_stream << "v4l2-ctl -d /dev/video" << video_device << " -c auto_exposure=3" ; // index 1 sets exposure mode to manual
+        std::string enable_command = enable_command_stream.str();
+
+        // Execute Command and recored response
+        int enable_returnCode = std::system(enable_command.c_str());
+        RCLCPP_INFO(rclcpp::get_logger("change_exposure"), "Command executed with return code: %d", enable_returnCode);
+
+        if (enable_returnCode == 0) {
+            response->success = true;
+            RCLCPP_INFO(rclcpp::get_logger("change_exposure"), "Command executed successfully, exposure set to: automatic");
+        } else {
+            response->success = false;
+            RCLCPP_ERROR(rclcpp::get_logger("change_exposure"), "Command failed with return code: %d", enable_returnCode);
+        }
+
+    } else {
     std::stringstream enable_command_stream;
     enable_command_stream << "v4l2-ctl -d /dev/video" << video_device << " -c auto_exposure=1" ; // index 1 sets exposure mode to manual
     std::string enable_command = enable_command_stream.str();
@@ -45,6 +63,7 @@ void changeExposure(const std::shared_ptr<camera_tools_interfaces::srv::ChangeEx
         response->success = false;
         RCLCPP_ERROR(rclcpp::get_logger("change_exposure"), "Command failed with return code: %d", returnCode);
     }
+ }
 
 
     // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Incoming request\na: %ld" " b: %ld", request->a, request->b);
