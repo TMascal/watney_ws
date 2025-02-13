@@ -36,12 +36,10 @@ def generate_launch_description():
         ]
     )
 
-    # URDF path
-    urdf_file_name = 'ldlidar_descr.urdf.xml'
     urdf = os.path.join(
-        get_package_share_directory('ldlidar_node'),
+        get_package_share_directory('ugv_description'),
         'urdf',
-        urdf_file_name
+        "ugv_rover.urdf"
     )
 
     with open(urdf, 'r') as infp:
