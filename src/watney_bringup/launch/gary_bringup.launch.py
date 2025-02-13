@@ -8,7 +8,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='high_to_low',
-            executable='serial_json',
+            executable='high_to_low_node.py',
             name='h2l_node',
             output='screen',
             parameters=[{'port': '/dev/serial0'},{'baudrate': 115200}]
