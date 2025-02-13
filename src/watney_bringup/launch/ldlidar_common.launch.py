@@ -46,17 +46,17 @@ def generate_launch_description():
     )
 
     # Fake odom publisher
-    fake_odom = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='static_transform_publisher',
-        output='screen',
-        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'ldlidar_base']
-    )
+    # fake_odom = Node(
+    #     package='tf2_ros',
+    #     executable='static_transform_publisher',
+    #     name='static_transform_publisher',
+    #     output='screen',
+    #     arguments=['0', '0', '0', '0', '0', '0', 'odom', 'ldlidar_base']
+    # )
 
     ld = LaunchDescription()
     ld.add_action(lc_mgr_node)
     ld.add_action(slam_toolbox_node)
-    ld.add_action(fake_odom)
+    # ld.add_action(fake_odom)
 
     return ld
