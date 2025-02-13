@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'serial_json = high_to_low.serial_json:main'
+            'high_to_low_node = high_to_low.high_to_low_node:main'
         ],
     },
 )
