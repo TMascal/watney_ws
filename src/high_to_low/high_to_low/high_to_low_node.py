@@ -3,6 +3,7 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from sensor_msgs.msg import Imu
 from sensor_msgs.msg import MagneticField
+from sensor_msgs.msg import JointState
 from geometry_msgs.msg import TwistWithCovarianceStamped
 from geometry_msgs.msg import Twist
 import serial
@@ -24,6 +25,7 @@ class SerialNode(Node):
         self.imu_publisher = self.create_publisher(Imu, '/h2l_node/imu/raw', 10)
         self.mag_publisher = self.create_publisher(MagneticField, '/h2l_node/imu/mag', 10)
         self.twist_publisher = self.create_publisher(TwistWithCovarianceStamped, '/h2l_node/wheel_velocity', 10)
+        self.joint_publisher = self.create_publisher(JointState, '/joint_states', 10)
         self.cmd_vel_subscription = self.create_subscription(Twist, '/h2l_node/cmd_vel', self.handle_cmd_vel, 10)
         self.write_subscription  # prevent unused variable warning
         self.ser = serial.Serial(port, baudrate, dsrdtr=None)
@@ -34,6 +36,8 @@ class SerialNode(Node):
         self.serial_recv_thread.start()
 
         self.last_time = self.get_clock().now()
+        self.previous_odl = 0.0
+        self.previous_odr = 0.0
 
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
@@ -89,7 +93,17 @@ class SerialNode(Node):
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
+        odl = float(json_data.get('odl', 0.0))
+        odr = float(json_data.get('odr', 0.0))
         width = 0.172
+        wheel_radius = .08
+
+        delta_odl = odl - self.previous_odl
+        delta_odr = odr - self.previous_odr
+        left_wheel_position = delta_odl / wheel_radius
+        right_wheel_position = delta_odr / wheel_radius
+        self.previous_odl = odl
+        self.previous_odr = odr
 
         linear_velocity_x = (rVel + lVel) / 2
         angular_velocity_z = (rVel - lVel) / width
@@ -136,6 +150,37 @@ class SerialNode(Node):
         ]
 
         self.twist_publisher.publish(twist_msg)
+
+        #add joint publisher
+        left_upper_joint_msg = JointState()
+        left_upper_joint_msg.header.stamp = current_time.to_msg()
+        left_upper_joint_msg.name = ["left_up_wheel_link_joint"]
+        left_upper_joint_msg.position = [left_wheel_position]
+        left_upper_joint_msg.velocity = [lVel]
+
+        right_upper_joint_msg = JointState()
+        right_upper_joint_msg.header.stamp = current_time.to_msg()
+        right_upper_joint_msg.name = ["right_up_wheel_link_joint"]
+        right_upper_joint_msg.position = [right_wheel_position]
+        right_upper_joint_msg.velocity = [rVel]
+
+        left_down_joint_msg = JointState()
+        left_down_joint_msg.header.stamp = current_time.to_msg()
+        left_down_joint_msg.name = ["left_down_wheel_link_joint"]
+        left_down_joint_msg.position = [left_wheel_position]
+        left_down_joint_msg.velocity = [lVel]
+
+        right_down_joint_msg = JointState()
+        right_down_joint_msg.header.stamp = current_time.to_msg()
+        right_down_joint_msg.name = ["right_down_wheel_link_joint"]
+        right_down_joint_msg.position = [right_wheel_position]
+        right_down_joint_msg.velocity = [rVel]
+
+        self.joint_publisher.publish(left_upper_joint_msg)
+        self.joint_publisher.publish(right_upper_joint_msg)
+        self.joint_publisher.publish(left_down_joint_msg)
+        self.joint_publisher.publish(right_down_joint_msg)
+
 
     def handle_default(self, json_data):
         pass
