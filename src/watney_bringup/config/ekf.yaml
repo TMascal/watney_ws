@@ -10,12 +10,12 @@ ekf_filter_node:
     world_frame: "odom"
 
     # IMU
-    imu0: "imu/data"
-    imu0_config: [false, false, false,  # Position X, Y, Z (not used)
-                  true, true, true,    # Orientation (roll, pitch, yaw)
-                  false, false, false, # Linear velocity (not used)
-                  true, true, true,    # Angular velocity (gyro)
-                  true, true, true]    # Acceleration (optional)
+    # imu0: "imu/data"
+    # imu0_config: [false, false, false,  # Position X, Y, Z (not used)
+    #               true, true, true,    # Orientation (roll, pitch, yaw)
+    #               false, false, false, # Linear velocity (not used)
+    #               true, true, true,    # Angular velocity (gyro)
+    #               true, true, true]    # Acceleration (optional)
 
     # Wheel encoder velocity
     twist0: "h2l_node/wheel_velocity"
