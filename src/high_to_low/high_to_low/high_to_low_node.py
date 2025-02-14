@@ -93,8 +93,8 @@ class SerialNode(Node):
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
-        odl = float(json_data.get('odl', 0.0))
-        odr = float(json_data.get('odr', 0.0))
+        odl = float(json_data.get('odl', 0.0))/100 # Convert to meters
+        odr = float(json_data.get('odr', 0.0))/100 # Convert to meters
         width = 0.172
         wheel_radius = .08
 
