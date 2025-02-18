@@ -41,8 +41,8 @@ class SerialNode(Node):
 
         self.set_feedback_rate(25)
         self.get_logger().info("Feedback frequency set to 25 Hz")
-        self.get_imu_offsets()
-        self.get_logger().info(f"Requesting IMU calibration.")
+        self.imu_calibration()
+        self.get_logger().info(f"IMU calibrating, please wait.")
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
@@ -62,7 +62,7 @@ class SerialNode(Node):
         json_str = json.dumps(json_data)
         self.write_serial(String(data=json_str))
 
-    def get_imu_offsets(self):
+    def imu_calibration(self):
         json_data = {
             "T": 128
         }
@@ -97,12 +97,19 @@ class SerialNode(Node):
         current_time = self.get_clock().now()
         self.last_time = current_time
 
+        #Physical Constants
+        width = 0.172
+        wheel_radius = .08
+        #Sensitivity Scale Factors (see ICM20948 data sheet)
+        accel_ssf = 8192
+        gyro_ssf = 65.5
+        magn_ssf = 0.15
+
+
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
         odl = float(json_data.get('odl', 0.0))/100 # Convert to meters
         odr = float(json_data.get('odr', 0.0))/100 # Convert to meters
-        width = 0.172
-        wheel_radius = .08
 
         delta_odl = odl - self.previous_odl
         delta_odr = odr - self.previous_odr
@@ -119,14 +126,14 @@ class SerialNode(Node):
         imu_msg.header.frame_id = "base_link"
         imu_msg.orientation_covariance = [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-        imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0)) * (math.pi / 180.0)
-        imu_msg.angular_velocity.y = float(json_data.get('gy', 0.0)) * (math.pi / 180.0)
-        imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0)) * (math.pi / 180.0)
+        imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0))/gyro_ssf * (math.pi / 180.0)
+        imu_msg.angular_velocity.y = float(json_data.get('gy', 0.0))/gyro_ssf * (math.pi / 180.0)
+        imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0))/gyro_ssf * (math.pi / 180.0)
         imu_msg.angular_velocity_covariance = [0.02, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.02] # Filler Values
 
-        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / 10000 * 9.81
-        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / 10000 * 9.81
-        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / 10000 * 9.81
+        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / accel_ssf *9.81
+        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / accel_ssf * 9.81
         imu_msg.linear_acceleration_covariance = [0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1]  # Filler Values
 
         self.imu_publisher.publish(imu_msg)
@@ -134,9 +141,9 @@ class SerialNode(Node):
         mag_msg = MagneticField()
         mag_msg.header.stamp = current_time.to_msg()
         mag_msg.header.frame_id = "base_link"
-        mag_msg.magnetic_field.x = float(json_data.get('mx', 0.0))
-        mag_msg.magnetic_field.y = float(json_data.get('my', 0.0))
-        mag_msg.magnetic_field.z = float(json_data.get('mz', 0.0))
+        mag_msg.magnetic_field.x = float(json_data.get('mx', 0.0)) * magn_ssf
+        mag_msg.magnetic_field.y = float(json_data.get('my', 0.0)) * magn_ssf
+        mag_msg.magnetic_field.z = float(json_data.get('mz', 0.0)) * magn_ssf
         mag_msg.magnetic_field_covariance = [0.05, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.05]  # Filler Values
 
         self.mag_publisher.publish(mag_msg)
