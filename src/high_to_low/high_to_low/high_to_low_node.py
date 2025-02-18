@@ -22,8 +22,8 @@ class SerialNode(Node):
 
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
-        self.imu_publisher = self.create_publisher(Imu, '/h2l_node/imu/raw', 10)
-        self.mag_publisher = self.create_publisher(MagneticField, '/h2l_node/imu/mag', 10)
+        self.imu_publisher = self.create_publisher(Imu, '/imu/data_raw', 10)
+        self.mag_publisher = self.create_publisher(MagneticField, '/imu/mag', 10)
         self.twist_publisher = self.create_publisher(TwistWithCovarianceStamped, '/h2l_node/wheel_velocity', 10)
         self.joint_publisher = self.create_publisher(JointState, '/joint_states', 10)
         self.cmd_vel_subscription = self.create_subscription(Twist, '/h2l_node/cmd_vel', self.handle_cmd_vel, 10)
