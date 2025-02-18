@@ -131,9 +131,9 @@ class SerialNode(Node):
         imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0))/gyro_ssf * (math.pi / 180.0)
         imu_msg.angular_velocity_covariance = [0.02, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.02] # Filler Values
 
-        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / accel_ssf *9.81
-        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / accel_ssf * 9.81
-        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / accel_ssf
+        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / accel_ssf
+        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / accel_ssf
         imu_msg.linear_acceleration_covariance = [0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1]  # Filler Values
 
         self.imu_publisher.publish(imu_msg)
