@@ -158,7 +158,11 @@ class SerialNode(Node):
         mag_msg.magnetic_field.x = float(json_data.get('mx', 0.0)) * magn_ssf
         mag_msg.magnetic_field.y = float(json_data.get('my', 0.0)) * magn_ssf
         mag_msg.magnetic_field.z = float(json_data.get('mz', 0.0)) * magn_ssf
-        mag_msg.magnetic_field_covariance = [0.05, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.05]  # Filler Values
+        mag_msg.magnetic_field_covariance = [
+            0.9115, -0.1343, -0.2316,
+           -0.1343,  0.6865,  0.0859,
+           -0.2316,  0.0859,  0.7230
+        ] # Calculated Covariances in Matlab
 
         self.mag_publisher.publish(mag_msg)
 
@@ -168,13 +172,13 @@ class SerialNode(Node):
         twist_msg.twist.twist.linear.x = linear_velocity_x
         twist_msg.twist.twist.angular.z = angular_velocity_z
         twist_msg.twist.covariance = [
-            0.01, 0.0, 0.0, 0.0, 0.0, 0.0,   # Covariance for linear X
-            0.0, 0.1, 0.0, 0.0, 0.0, 0.0,   # Covariance for linear Y (ignored)
-            0.0, 0.0, 0.1, 0.0, 0.0, 0.0,   # Covariance for linear Z (ignored)
-            0.0, 0.0, 0.0, 0.1, 0.0, 0.0,   # Covariance for angular X (ignored)
-            0.0, 0.0, 0.0, 0.0, 0.1, 0.0,   # Covariance for angular Y (ignored)3
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.05   # Covariance for yaw rate (tune as needed)
-        ]
+            0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.1, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.1, 0.0, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.1, 0.0,
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.05
+        ] # Filler values
 
         self.twist_publisher.publish(twist_msg)
 
