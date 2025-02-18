@@ -63,11 +63,17 @@ class SerialNode(Node):
         self.write_serial(String(data=json_str))
 
     def imu_calibration(self):
-        json_data = {
+        json_data_127 = {
+            "T": 127
+        }
+        json_str_127 = json.dumps(json_data_127)
+        self.write_serial(String(data=json_str_127))
+        
+        json_data_128 = {
             "T": 128
         }
-        json_str = json.dumps(json_data)
-        self.write_serial(String(data=json_str))
+        json_str_128 = json.dumps(json_data_128)
+        self.write_serial(String(data=json_str_128))
 
     def handle_json(self, data):
         try:
@@ -131,9 +137,9 @@ class SerialNode(Node):
         imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0))/gyro_ssf * (math.pi / 180.0)
         imu_msg.angular_velocity_covariance = [0.02, 0.0, 0.0, 0.0, 0.02, 0.0, 0.0, 0.0, 0.02] # Filler Values
 
-        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / accel_ssf
-        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / accel_ssf
-        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / accel_ssf
+        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / accel_ssf * 9.81
         imu_msg.linear_acceleration_covariance = [0.1, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1]  # Filler Values
 
         self.imu_publisher.publish(imu_msg)
