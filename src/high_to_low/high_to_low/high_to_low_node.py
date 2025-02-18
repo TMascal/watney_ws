@@ -39,10 +39,13 @@ class SerialNode(Node):
         self.previous_odl = 0.0
         self.previous_odr = 0.0
 
+        self.set_feedback_rate(25)
+        self.get_logger().info("Feedback frequency set to 25 Hz")
+        self.get_imu_offsets()
+        self.get_logger().info(f"Requesting IMU calibration.")
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
-        feedback_rate_set = False
         while rclpy.ok():
             data = self.ser.readline().decode('utf-8')
             if data:
@@ -50,15 +53,18 @@ class SerialNode(Node):
                 msg.data = data
                 self.read_publisher.publish(msg)
                 self.handle_json(data)
-                if not feedback_rate_set:
-                    self.set_feedback_rate(25)
-                    self.get_logger().info("Feedback frequency set to 25 Hz")
-                    feedback_rate_set = True
 
     def set_feedback_rate(self, rate_hz):
         json_data = {
             "T": 142,
             "cmd": int(1000 / rate_hz)  # Convert Hz to milliseconds
+        }
+        json_str = json.dumps(json_data)
+        self.write_serial(String(data=json_str))
+
+    def get_imu_offsets(self):
+        json_data = {
+            "T": 128
         }
         json_str = json.dumps(json_data)
         self.write_serial(String(data=json_str))
