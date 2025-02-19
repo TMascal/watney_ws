@@ -16,6 +16,7 @@ class SerialNode(Node):
         super().__init__('h2l_node')
         self.declare_parameter('port', '/dev/serial0')
         self.declare_parameter('baudrate', 115200)
+        self.declare_parameter('use_mag', False)
 
         port = self.get_parameter('port').get_parameter_value().string_value
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
@@ -81,7 +82,7 @@ class SerialNode(Node):
             if 'T' in json_data:
                 t_value = json_data['T']
                 handlers = {
-                    1001: self.handle_1001,
+                    1001: lambda data: self.handle_1001(data, self.get_parameter('use_mag').get_parameter_value().bool_value),
                 }
                 handler = handlers.get(t_value, self.handle_default)
                 handler(json_data)
@@ -99,7 +100,7 @@ class SerialNode(Node):
         json_str = json.dumps(json_data)
         self.write_serial(String(data=json_str))
 
-    def handle_1001(self, json_data):
+    def handle_1001(self, json_data, use_mag):
         current_time = self.get_clock().now()
         self.last_time = current_time
 
@@ -130,7 +131,18 @@ class SerialNode(Node):
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
         imu_msg.header.frame_id = "base_link"
-        imu_msg.orientation_covariance = [-1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        if not use_mag:
+            imu_msg.orientation_covariance = [
+                0.0028, -0.0001, 0.0033,
+                -0.0001, 0.0001, 0.0010,
+                0.0033, 0.0010, 8.3553
+            ]  # Calculated Covariances in Matlab w/o Magnetometer
+        else:
+            imu_msg.orientation_covariance = [
+                0.0016, -0.0000, 0.0008,
+                -0.0000, 0.0000, -0.0009,
+                0.0008, -0.0009, 7.2158
+            ]  # Calculated Covariances in Matlab w/ Magnetometer
 
         imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0))/gyro_ssf * (math.pi / 180.0)
         imu_msg.angular_velocity.y = float(json_data.get('gy', 0.0))/gyro_ssf * (math.pi / 180.0)
