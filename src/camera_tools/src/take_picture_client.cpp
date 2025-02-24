@@ -42,7 +42,7 @@ private:
         auto future_result = client_->async_send_request(request);
         RCLCPP_INFO(this->get_logger(), "Waiting for the server response...");
 
-        if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), future_result, 5s) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), future_result, 30s) == rclcpp::FutureReturnCode::SUCCESS) {
             auto response = future_result.get();
             RCLCPP_INFO(this->get_logger(), "Response received from the server.");
             save_image(response->image);

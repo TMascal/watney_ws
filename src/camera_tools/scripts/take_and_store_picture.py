@@ -15,7 +15,15 @@ if not camera.isOpened():
     print("Error: Unable to access the camera.")
     exit()
 
+desired_width = 2592  # Hardcoded width
+desired_height = 1944  # Hardcoded height
+camera.set(cv2.CAP_PROP_FRAME_WIDTH, desired_width)
+camera.set(cv2.CAP_PROP_FRAME_HEIGHT, desired_height)
+
 print("Press 's' to take a picture and save it, or 'q' to quit.")
+
+ret, frame = camera.read()
+cv2.imwrite(f'//home//mark//watney_ws//pictures//image_{6}.jpg', frame)
 
 while True:
     # Capture frame-by-frame
