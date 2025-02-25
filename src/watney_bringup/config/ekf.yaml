@@ -44,9 +44,7 @@ ekf_filter_node:
                     false, false, false,   # Orientation: disable roll, pitch, yaw
                     true, false, false,    # Linear velocity: enable x only
                     false, false, true,    # Angular velocity: enable yaw only
-                    false, false, false,   # Acceleration: disable (optional)
-                    false, false, false,   # Additional elements to make it 15
-                    false, false, false]   # Additional elements to make it 15
+                    false, false, false]   # Acceleration: disable (optional)
     twist0_differential: false
     twist0_relative: false
     twist0_queue_size: 10
