@@ -4,20 +4,40 @@ ekf_filter_node:
     two_d_mode: true
     publish_tf: true
 
+    # Frame IDs
     map_frame: "map"
     odom_frame: "odom"
     base_link_frame: "base_link"
+    # For 2D operation, it’s recommended that world_frame match odom_frame.
     world_frame: "odom"
 
-    # IMU
+    # IMU sensor settings
     imu0: "imu/data"
-    imu0_config: [false, false, false,  # Position X, Y, Z (not used)
-                  true, true, true,    # Orientation (roll, pitch, yaw)
-                  false, false, false, # Linear velocity (not used)
-                  true, true, true,    # Angular velocity (gyro)
-                  true, true, true]    # Acceleration (optional)
+    # The full 15-element config corresponds to:
+    # [pos_x, pos_y, pos_z,
+    #  roll, pitch, yaw,
+    #  vel_x, vel_y, vel_z,
+    #  roll_rate, pitch_rate, yaw_rate,
+    #  accel_x, accel_y, accel_z]
+    #
+    # In two_d_mode, only x, y, yaw (and their velocities) are estimated.
+    # Here we disable position and all but yaw in orientation & angular velocity.
+    imu0_config: [false, false, false,    # Position: disable x, y, z
+                  false, false, true,     # Orientation: disable roll & pitch; enable yaw only
+                  false, false, false,    # Linear velocity: none used
+                  false, false, true,     # Angular velocity: only yaw_rate is used
+                  false, false, false]    # Acceleration: disable (optional; enable only if well‐characterized)
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_size: 10
 
-    # Wheel encoder velocity
+    # Wheel encoder velocity sensor settings
     twist0: "h2l_node/wheel_velocity"
-    twist0_config: [true, false, false,  # X velocity (linear), ignore Y, Z
-                    false, false, true]  # Yaw velocity (angular)
+    # For twist measurements in 2D the config vector has 6 elements:
+    # [lin_vel_x, lin_vel_y, lin_vel_z, ang_vel_roll, ang_vel_pitch, ang_vel_yaw]
+    # We only update x (linear) and yaw (angular) velocities.
+    twist0_config: [true, false, false,   # Linear velocity: enable x only
+                    false, false, true]    # Angular velocity: enable yaw only
+    twist0_differential: false
+    twist0_relative: false
+    twist0_queue_size: 10
