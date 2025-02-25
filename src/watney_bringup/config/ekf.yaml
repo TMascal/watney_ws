@@ -1,4 +1,4 @@
-ekf_node:
+ekf_filter_node:
   ros__parameters:
     frequency: 50.0
     two_d_mode: true
