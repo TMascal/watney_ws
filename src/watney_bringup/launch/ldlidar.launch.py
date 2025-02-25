@@ -54,7 +54,7 @@ def generate_launch_description():
     )
 
     # URDF path
-    urdf_file_name = 'watney.urdf.xml'
+    urdf_file_name = 'gary.urdf.xml'
     urdf = os.path.join(
         get_package_share_directory('watney_bringup'),
         'urdf',
@@ -66,7 +66,7 @@ def generate_launch_description():
     rsp_node = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        name='ldlidar_state_publisher',
+        #name='ldlidar_state_publisher', #This may be necessary, removing for now
         output='screen',
         parameters=[{'robot_description': robot_desc}],
         arguments=[urdf]

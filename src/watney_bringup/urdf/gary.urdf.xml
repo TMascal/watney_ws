@@ -1,0 +1,81 @@
+<?xml version="1.0" ?>
+<robot name="ugv_rover">
+  <link name="base_footprint"/>
+
+  <!-- Base Link -->
+  <link name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.000460087791654118 -6.50856019576702E-10 -0.0147959620149623"
+        rpy="0 0 0" />
+      <mass
+        value="2.78375064359473" />
+      <inertia
+        ixx="0.00651567554169617"
+        ixy="-5.86655425789789E-13"
+        ixz="3.77886436056975E-05"
+        iyy="0.00933991752413667"
+        iyz="-2.53116742521487E-11"
+        izz="0.0121583506563461" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/base_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/base_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Base to footprint joint -->
+  <joint name="base_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0.000460087791654118 6.50856019576702E-10 0.08" rpy="0 0 0"/> 
+  </joint>
+
+
+  <!-- LiDAR -->
+  <link name="ldlidar_base">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://watney_bringup/meshes/LD19.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="ldlidar_mat">
+        <color rgba="0.8 0.8 0.8 0.8"/>
+      </material>
+    </visual>
+  </link>
+
+  <joint name="lidar2ugv_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="ldlidar_base"/>
+    <origin xyz="0.0 0.0 0.02" rpy="0 0 0"/>
+  </joint>
+
+  <link name="ldlidar_link" />
+
+  <joint name="ldlidar_link_joint" type="fixed">
+    <parent link="ldlidar_base"/>
+    <child link="ldlidar_link"/>
+    <origin xyz="0 0 0.02745" rpy="0 0 0" />
+  </joint>
+  
+</robot>
