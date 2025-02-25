@@ -33,14 +33,20 @@ ekf_filter_node:
 
     # Wheel encoder velocity sensor settings
     twist0: "h2l_node/wheel_velocity"
-    # For twist measurements in 2D the config vector has 6 elements:
-    # [lin_vel_x, lin_vel_y, lin_vel_z, ang_vel_roll, ang_vel_pitch, ang_vel_yaw]
+    # For twist measurements in 2D the config vector has 15 elements:
+    # [pos_x, pos_y, pos_z,
+    #  roll, pitch, yaw,
+    #  vel_x, vel_y, vel_z,
+    #  roll_rate, pitch_rate, yaw_rate,
+    #  accel_x, accel_y, accel_z]
     # We only update x (linear) and yaw (angular) velocities.
     twist0_config: [false, false, false,   # Position: disable x, y, z
                     false, false, false,   # Orientation: disable roll, pitch, yaw
                     true, false, false,    # Linear velocity: enable x only
                     false, false, true,    # Angular velocity: enable yaw only
-                    false, false, false]   # Acceleration: disable (optional)
+                    false, false, false,   # Acceleration: disable (optional)
+                    false, false, false,   # Additional elements to make it 15
+                    false, false, false]   # Additional elements to make it 15
     twist0_differential: false
     twist0_relative: false
     twist0_queue_size: 10
