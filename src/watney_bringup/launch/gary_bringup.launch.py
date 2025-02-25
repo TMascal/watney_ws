@@ -18,8 +18,7 @@ def generate_launch_description():
             executable='imu_filter_madgwick_node',
             name='imu_filter_node',
             output='screen',
-            parameters=[{'use_mag': False}],
-            remappings=[('/imu/data_raw','/h2l_node/imu/raw'),('/imu/mag','/h2l_node/imu/mag')]
+            parameters=[{'use_mag': False}]
         ),
         Node(
             package='robot_localization',
