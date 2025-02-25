@@ -20,6 +20,20 @@ public:
             "take_picture",
             std::bind(&TakePictureServiceServer::handle_request, this, _1, _2));
         RCLCPP_INFO(this->get_logger(), "Service server ready.");
+
+        // Video capturing logic
+        cap.open(2, cv::CAP_V4L2); // Open the default camera (index 0)
+
+        if (!cap.isOpened()) {
+            RCLCPP_ERROR(this->get_logger(), "Failed to open the camera.");
+            return;
+        }
+
+        // Set the desired resolution
+        int desired_width = 2592;  // Hardcoded width
+        int desired_height = 1944; // Hardcoded height
+        cap.set(cv::CAP_PROP_FRAME_WIDTH, desired_width);
+        cap.set(cv::CAP_PROP_FRAME_HEIGHT, desired_height);
     }
 
 private:
@@ -27,23 +41,6 @@ private:
                     std::shared_ptr<camera_tools_interfaces::srv::TakePicture::Response> response)
 {
     (void)request;
-
-    // Video capturing logic
-    cv::Mat frame;
-    cv::VideoCapture cap(2, cv::CAP_V4L2); // Open the default camera (index 0)
-
-    if (!cap.isOpened()) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to open the camera.");
-        return;
-    }
-
-
-    // Set the desired resolution
-    int desired_width = 2592;  // Hardcoded width
-    int desired_height = 1944; // Hardcoded height
-    cap.set(cv::CAP_PROP_FRAME_WIDTH, desired_width);
-    cap.set(cv::CAP_PROP_FRAME_HEIGHT, desired_height);
-
     cap >> frame; // Capture and discard frame
 
     if (frame.empty()) {
@@ -61,6 +58,9 @@ private:
     // Declare a service Server for TakePicture Service
     rclcpp::Service<camera_tools_interfaces::srv::TakePicture>::SharedPtr service_;
 
+    // Declare member variables for video capturing and frame storage
+    cv::VideoCapture cap;
+    cv::Mat frame;
 };
 
 int main(int argc, char **argv)
