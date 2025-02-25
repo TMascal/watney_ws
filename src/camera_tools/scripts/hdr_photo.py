@@ -128,7 +128,6 @@ class MyServiceClientNode(Node):
             # Reinhard tone mapping (more natural result)
             tonemap_reinhard = cv2.createTonemapReinhard(gamma=1.5, intensity=0, light_adapt=0, color_adapt=1.0)
             ldr_image = tonemap_reinhard.process(hdr_image)
-
             # Normalize to 8-bit range for saving and display
             ldr_image = cv2.normalize(ldr_image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC3)
 
