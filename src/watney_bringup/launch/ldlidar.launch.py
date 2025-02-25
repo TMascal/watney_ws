@@ -1,18 +1,34 @@
+# Copyright 2022 Walter Lucetti
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+###########################################################################
+
 import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
+from launch_ros.actions import Node, LifecycleNode
+
 
 def generate_launch_description():
+    
     node_name = LaunchConfiguration('node_name')
 
     # Lidar node configuration file
     lidar_config_path = os.path.join(
-        get_package_share_directory('ldlidar_node'),
+        get_package_share_directory('watney_bringup'),
         'params',
         'ldlidar.yaml'
     )
@@ -25,23 +41,24 @@ def generate_launch_description():
     )
 
     # LDLidar lifecycle node
-    ldlidar_node = Node(
+    ldlidar_node = LifecycleNode(
         package='ldlidar_node',
         executable='ldlidar_node',
         name=node_name,
         namespace='',
         output='screen',
         parameters=[
-            lidar_config_path
+            # YAML files
+            lidar_config_path  # Parameters
         ]
     )
 
+    # URDF path
+    urdf_file_name = 'ldlidar_descr.urdf.xml'
     urdf = os.path.join(
-        get_package_share_directory('ugv_description'),
+        get_package_share_directory('watney_bringup'),
         'urdf',
-        "ugv_rover.urdf"
-    )
-
+        urdf_file_name)
     with open(urdf, 'r') as infp:
         robot_desc = infp.read()
 
@@ -55,18 +72,16 @@ def generate_launch_description():
         arguments=[urdf]
     )
 
-    # Include common launch file
-    ldlidar_common_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            get_package_share_directory('watney_bringup'),
-            '/launch/ldlidar_common.launch.py'
-        ])
-    )
-
+    # Define LaunchDescription variable
     ld = LaunchDescription()
+
+    # Launch arguments
     ld.add_action(declare_node_name_cmd)
+
+    # Launch Nav2 Lifecycle Manager
     ld.add_action(rsp_node)
+
+    # LDLidar Lifecycle node
     ld.add_action(ldlidar_node)
-    ld.add_action(ldlidar_common_launch)
 
     return ld

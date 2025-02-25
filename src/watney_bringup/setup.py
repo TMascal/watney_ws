@@ -12,7 +12,9 @@ setup(
                     ['resource/' + package_name]),
                 ('share/' + package_name, ['package.xml']),
                 ('share/' + package_name + '/launch', glob('launch/*')),
-                ('share/' + package_name + '/config', glob('config/*')),  # Add this line
+                ('share/' + package_name + '/config', glob('config/*')),
+                ('share/' + package_name + '/params', glob('params/*')),
+                ('share/' + package_name + '/urdf', glob('urdf/*')),
             ],
     install_requires=['setuptools'],
     zip_safe=True,
