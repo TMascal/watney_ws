@@ -54,7 +54,7 @@ def generate_launch_description():
     )
 
     # URDF path
-    urdf_file_name = 'ldlidar_descr.urdf.xml'
+    urdf_file_name = 'watney.urdf.xml'
     urdf = os.path.join(
         get_package_share_directory('watney_bringup'),
         'urdf',
