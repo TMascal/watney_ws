@@ -4,7 +4,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import Imu
 from sensor_msgs.msg import MagneticField
 from sensor_msgs.msg import JointState
-from geometry_msgs.msg import TwistWithCovarianceStamped
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 import serial
 import threading
@@ -25,7 +25,7 @@ class SerialNode(Node):
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
         self.imu_publisher = self.create_publisher(Imu, '/imu/data_raw', 10)
         self.mag_publisher = self.create_publisher(MagneticField, '/imu/mag', 10)
-        self.twist_publisher = self.create_publisher(TwistWithCovarianceStamped, '/h2l_node/wheel_velocity', 10)
+        self.odom_publisher = self.create_publisher(Odometry, '/h2l_node/wheel_odometry', 10)
         self.joint_publisher = self.create_publisher(JointState, '/joint_states', 10)
         self.cmd_vel_subscription = self.create_subscription(Twist, '/cmd_vel', self.handle_cmd_vel, 10)
         self.write_subscription  # prevent unused variable warning
@@ -39,6 +39,9 @@ class SerialNode(Node):
         self.last_time = self.get_clock().now()
         self.previous_odl = 0.0
         self.previous_odr = 0.0
+        self.x_position = 0.0
+        self.y_position = 0.0
+        self.theta = 0.0
 
         self.set_feedback_rate(25)
         self.get_logger().info("Feedback frequency set to 25 Hz")
@@ -102,6 +105,7 @@ class SerialNode(Node):
 
     def handle_1001(self, json_data, use_mag):
         current_time = self.get_clock().now()
+        delta_time = (current_time - self.last_time).nanoseconds / 1e9  # Convert to seconds
         self.last_time = current_time
 
         #Physical Constants
@@ -128,9 +132,18 @@ class SerialNode(Node):
         linear_velocity_x = (rVel + lVel) / 2
         angular_velocity_z = (rVel - lVel) / width
 
+        delta_theta = angular_velocity_z * delta_time
+        self.theta += delta_theta
+
+        delta_x = linear_velocity_x * delta_time * math.cos(self.theta + delta_theta / 2)
+        delta_y = linear_velocity_x * delta_time * math.sin(self.theta + delta_theta / 2)
+
+        self.x_position += delta_x
+        self.y_position += delta_y
+
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
-        imu_msg.header.frame_id = "base_footprint"
+        imu_msg.header.frame_id = "imu_link"
         if not use_mag:
             imu_msg.orientation_covariance = [
                 0.0028, -0.0001, 0.0033,
@@ -166,7 +179,7 @@ class SerialNode(Node):
 
         mag_msg = MagneticField()
         mag_msg.header.stamp = current_time.to_msg()
-        mag_msg.header.frame_id = "base_footprint"
+        mag_msg.header.frame_id = "imu_link"
         mag_msg.magnetic_field.x = float(json_data.get('mx', 0.0)) * magn_ssf
         mag_msg.magnetic_field.y = float(json_data.get('my', 0.0)) * magn_ssf
         mag_msg.magnetic_field.z = float(json_data.get('mz', 0.0)) * magn_ssf
@@ -178,12 +191,17 @@ class SerialNode(Node):
 
         self.mag_publisher.publish(mag_msg)
 
-        twist_msg = TwistWithCovarianceStamped()
-        twist_msg.header.stamp = current_time.to_msg()
-        twist_msg.header.frame_id = "base_footprint"
-        twist_msg.twist.twist.linear.x = linear_velocity_x
-        twist_msg.twist.twist.angular.z = angular_velocity_z
-        twist_msg.twist.covariance = [
+        odom_msg = Odometry()
+        odom_msg.header.stamp = current_time.to_msg()
+        odom_msg.header.frame_id = "odom"
+        odom_msg.pose.pose.position.x = self.x_position
+        odom_msg.pose.pose.position.y = self.y_position
+        odom_msg.pose.pose.position.z = 0.0
+        odom_msg.pose.pose.orientation.z = math.sin(self.theta / 2)
+        odom_msg.pose.pose.orientation.w = math.cos(self.theta / 2)
+        odom_msg.twist.twist.linear.x = linear_velocity_x
+        odom_msg.twist.twist.angular.z = angular_velocity_z
+        odom_msg.twist.covariance = [
             0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
             0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.1, 0.0, 0.0, 0.0,
@@ -192,7 +210,7 @@ class SerialNode(Node):
             0.0, 0.0, 0.0, 0.0, 0.0, 0.05
         ] # Filler values
 
-        self.twist_publisher.publish(twist_msg)
+        self.odom_publisher.publish(odom_msg)
 
         #add joint publisher
         left_upper_joint_msg = JointState()

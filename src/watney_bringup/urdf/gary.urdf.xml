@@ -1,8 +1,9 @@
 <?xml version="1.0" ?>
 <robot name="ugv_rover">
+
+  <!-- Base -->
   <link name="base_footprint"/>
 
-  <!-- Base Link -->
   <link name="base_link">
     <inertial>
       <origin
@@ -78,4 +79,14 @@
     <origin xyz="0 0 0.02745" rpy="0 0 0" />
   </joint>
   
+
+  <!-- IMU -->
+  <link name-"imu_link" />
+
+  <joint name="imu_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+
 </robot>

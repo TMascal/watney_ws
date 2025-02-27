@@ -18,14 +18,14 @@ ekf_filter_node:
                   true, true, true]    # Lin Accel
 
     # Wheel encoder velocity
-    twist0: "h2l_node/wheel_velocity"
-    twist0_config: [false, false, false, # Pose
-                    false, false, false, # Orient
+    odom0: "h2l_node/wheel_odometry"
+    odom0_config: [true, true, false, # Pose
+                    false, false, true, # Orient
                     true, false, false,  # Lin Vel
                     false, false, true,  # Ang Vel
                     false, false, false] # Lin Accel
 
-    # pose0: "pose"
+    # pose0: "pose" #This might be in the wrong frame, don't use yet
     # pose0:_config: [true, true, false,  # Pose
     #                 false, false, true, # Orient
     #                 false, false, false, # Lin Vel
