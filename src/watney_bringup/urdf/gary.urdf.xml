@@ -54,7 +54,7 @@
   <!-- LiDAR -->
   <link name="ldlidar_base">
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
       <geometry>
         <mesh filename="package://watney_bringup/meshes/LD19.stl" scale="0.001 0.001 0.001" />
       </geometry>
@@ -67,7 +67,7 @@
   <joint name="lidar2ugv_joint" type="fixed">
     <parent link="base_link"/>
     <child link="ldlidar_base"/>
-    <origin xyz="0.0 0.0 0.02" rpy="0 0 0"/>
+    <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
   </joint>
 
   <link name="ldlidar_link" />
