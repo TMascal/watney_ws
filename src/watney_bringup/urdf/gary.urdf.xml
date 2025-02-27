@@ -81,7 +81,7 @@
   
 
   <!-- IMU -->
-  <link name-"imu_link" />
+  <link name="imu_link" />
 
   <joint name="imu_joint" type="fixed">
     <parent link="base_link"/>
