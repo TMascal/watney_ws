@@ -11,16 +11,23 @@ ekf_filter_node:
 
     # IMU
     imu0: "imu/data"
-    imu0_config: [false, false, false,  # Position X, Y, Z (not used)
-                  true, true, true,    # Orientation (roll, pitch, yaw)
-                  false, false, false, # Linear velocity (not used)
-                  true, true, true,    # Angular velocity (gyro)
-                  true, true, true]    # Acceleration (optional)
+    imu0_config: [false, false, false, # Pose
+                  false, false, true,    # Orient
+                  false, false, false, # Lin Vel
+                  true, true, true,    # Ang Vel
+                  true, true, true]    # Lin Accel
 
     # Wheel encoder velocity
     twist0: "h2l_node/wheel_velocity"
-    twist0_config: [true, false, false,  # X velocity (linear), ignore Y, Z
-                    false, false, false,
-                    false, false, false,
-                    false, false, true,  # Yaw velocity (angular)
-                    false, false, false]
+    twist0_config: [false, false, false, # Pose
+                    false, false, false, # Orient
+                    true, false, false,  # Lin Vel
+                    false, false, true,  # Ang Vel
+                    false, false, false] # Lin Accel
+
+    # pose0: "pose"
+    # pose0:_config: [true, true, false,  # Pose
+    #                 false, false, true, # Orient
+    #                 false, false, false, # Lin Vel
+    #                 false, false, false,  # Ang Vel
+    #                 false, false, false] # Lin Accel
