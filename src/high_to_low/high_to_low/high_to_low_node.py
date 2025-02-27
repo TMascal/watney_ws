@@ -130,7 +130,7 @@ class SerialNode(Node):
 
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
-        imu_msg.header.frame_id = "base_link"
+        imu_msg.header.frame_id = "base_footprint"
         if not use_mag:
             imu_msg.orientation_covariance = [
                 0.0028, -0.0001, 0.0033,
@@ -166,7 +166,7 @@ class SerialNode(Node):
 
         mag_msg = MagneticField()
         mag_msg.header.stamp = current_time.to_msg()
-        mag_msg.header.frame_id = "base_link"
+        mag_msg.header.frame_id = "base_footprint"
         mag_msg.magnetic_field.x = float(json_data.get('mx', 0.0)) * magn_ssf
         mag_msg.magnetic_field.y = float(json_data.get('my', 0.0)) * magn_ssf
         mag_msg.magnetic_field.z = float(json_data.get('mz', 0.0)) * magn_ssf
@@ -180,7 +180,7 @@ class SerialNode(Node):
 
         twist_msg = TwistWithCovarianceStamped()
         twist_msg.header.stamp = current_time.to_msg()
-        twist_msg.header.frame_id = "base_link"
+        twist_msg.header.frame_id = "base_footprint"
         twist_msg.twist.twist.linear.x = linear_velocity_x
         twist_msg.twist.twist.angular.z = angular_velocity_z
         twist_msg.twist.covariance = [
