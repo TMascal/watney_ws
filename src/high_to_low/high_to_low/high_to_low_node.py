@@ -27,7 +27,7 @@ class SerialNode(Node):
         self.mag_publisher = self.create_publisher(MagneticField, '/imu/mag', 10)
         self.twist_publisher = self.create_publisher(TwistWithCovarianceStamped, '/h2l_node/wheel_velocity', 10)
         self.joint_publisher = self.create_publisher(JointState, '/joint_states', 10)
-        self.cmd_vel_subscription = self.create_subscription(Twist, '/h2l_node/cmd_vel', self.handle_cmd_vel, 10)
+        self.cmd_vel_subscription = self.create_subscription(Twist, '/cmd_vel', self.handle_cmd_vel, 10)
         self.write_subscription  # prevent unused variable warning
         self.ser = serial.Serial(port, baudrate, dsrdtr=None)
         self.ser.setRTS(False)
