@@ -88,7 +88,13 @@ class MyServiceClientNode(Node):
 
         images = [img1, img2, img3]
 
+        for i, img in enumerate(images, start=1):
+            filepath = f'/home/mark/watney_ws/pictures/image{i}.jpg'
+            cv2.imwrite(filepath, img)
+        self.get_logger().info(f'Saved images to /home/mark/watney_ws/pictures/')
+
         return images
+
 
     def process_hdr(self, exposure_values=None):
         if exposure_values is None:
@@ -142,7 +148,7 @@ def main():
     try:
         node = MyServiceClientNode()
         response = node.process_hdr()
-        cv2.imwrite(f'//home//mark//watney_ws//pictures//image.jpg', response)
+        cv2.imwrite(f'/pictures/imageSample.jpg', response)
         node.get_logger().info(f'//home//mark//watney_ws//pictures//Save.jpg:')
 
         rclpy.spin(node)

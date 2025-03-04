@@ -34,6 +34,12 @@ public:
         int desired_height = 1944; // Hardcoded height
         cap.set(cv::CAP_PROP_FRAME_WIDTH, desired_width);
         cap.set(cv::CAP_PROP_FRAME_HEIGHT, desired_height);
+        // Attempt to enable camera auto-focus
+        if (cap.set(cv::CAP_PROP_AUTOFOCUS, 1)) {
+            RCLCPP_INFO(this->get_logger(), "Auto-focus enabled.");
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Auto-focus not supported by the camera.");
+        }
     }
 
 private:
@@ -41,6 +47,14 @@ private:
                     std::shared_ptr<camera_tools_interfaces::srv::TakePicture::Response> response)
 {
     (void)request;
+    // Discard initial frames to ensure the captured frame is focused
+    for (int i = 0; i < 5; ++i) {
+        cap >> frame;
+    }
+
+    // Delay to allow the camera's auto-focus to adjust
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
     cap >> frame; // Capture and discard frame
 
     if (frame.empty()) {
