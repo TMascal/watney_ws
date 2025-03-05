@@ -21,7 +21,7 @@ def generate_launch_description():
             executable='high_to_low_node',
             name='high_to_low_node',
             output='screen'
-        ),
+        )
         
     # Launch imu_filter_madgwick node
     imu_filter_node = Node(
@@ -30,7 +30,7 @@ def generate_launch_description():
             name='imu_filter_madgwick_node',
             output='screen',
             parameters=[{'use_mag': False}]
-        ),
+        )
         
     # Launch robot_localization node
     robot_localizaton_node = Node(
