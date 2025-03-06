@@ -78,7 +78,7 @@ class ArUcoTracker(Node):
                 twist_msg.angular.z = angular_y
                 self.publisher.publish(twist_msg)
 
-                self.get_logger().info(f"Published: X={control_signal_x:.2f} m/s, Z={angular_z:.2f} rad/s")
+                self.get_logger().info(f"Published: X={control_signal_x:.2f} m/s, Z={angular_y:.2f} rad/s")
 
                 self.prev_transformation_matrix = curr_transformation_matrix
                 self.prev_time = curr_time
