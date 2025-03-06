@@ -86,13 +86,13 @@ def generate_launch_description():
         executable='static_transform_publisher',
         name='static_transform_publisher',
         output='screen',
-        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_footprint']
+        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link']
     )
 
     # RVIZ2 settings
     rviz2_config = os.path.join(
         get_package_share_directory('watney_bringup'),
-        'config',
+        'rviz',
         'ldlidar_slam.rviz'
     )
 
