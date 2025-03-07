@@ -23,6 +23,15 @@ def generate_launch_description():
     # Define the path to the ldlidar_slam launch file
     ldlidar_slam_launch_file = os.path.join(watney_bringup_share_dir, 'launch', 'ldlidar_slam.launch.py')
 
+    # Define the path to the custom nav2 params file
+    nav2_params_file = os.path.join(watney_bringup_share_dir, 'params', 'nav2_gary_params.yaml')
+
+    # Define the path to the nav2_bringup navigation launch file
+    nav2_launch_file = os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'navigation_launch.py')
+
+    # RVIZ2 settings
+    rviz2_config = os.path.join(get_package_share_directory('watney_bringup'), 'rviz', 'nav2_view.rviz')
+
     # Launch high_to_low_node
     high2low_node = Node(
             package='high_to_low',
@@ -55,6 +64,12 @@ def generate_launch_description():
             PythonLaunchDescriptionSource(ldlidar_slam_launch_file)
         )
 
+    # Include nav2_bringup navigation launch file with custom params
+    nav2_launch = IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(nav2_launch_file),
+            launch_arguments={'params_file': nav2_params_file}.items()
+        )
+
     # Throttle LiDAR topic
     lidar_throttle_node = Node(
             package='topic_tools',
@@ -64,6 +79,16 @@ def generate_launch_description():
             output='screen'
         )
 
+    # RVIZ2node
+    rviz2_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=[["-d"], [rviz2_config]]
+    )
+
+
     ld = LaunchDescription()
 
     ld.add_entity(frequency_arg)
@@ -71,7 +96,9 @@ def generate_launch_description():
     ld.add_action(TimerAction(period=5.0, actions=[imu_filter_node]))  # Wait 5 seconds before launching imu_filter_node
     ld.add_action(TimerAction(period=5.0, actions=[robot_localizaton_node]))  # Wait 10 seconds before launching robot_localizaton_node
     ld.add_action(TimerAction(period=15.0, actions=[ldlidar_slam_launch]))  # Wait 15 seconds before including ldlidar_slam_launch
+    ld.add_action(nav2_launch)
     ld.add_action(lidar_throttle_node)
+    ld.add_action(rviz2_node)
 
     return ld
 
