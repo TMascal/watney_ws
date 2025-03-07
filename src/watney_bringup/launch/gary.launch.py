@@ -1,10 +1,12 @@
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
 from launch_ros.actions import Node
+from launch.event_handlers import OnProcessStart
 from ament_index_python.packages import get_package_share_directory
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+
 
 def generate_launch_description():
 
@@ -68,10 +70,35 @@ def generate_launch_description():
 
     ld.add_entity(frequency_arg)
     ld.add_action(high2low_node)
-    ld.add_action(imu_filter_node)
-    ld.add_action(robot_localizaton_node)
-    ld.add_action(ldlidar_slam_launch)
-    ld.add_action(lidar_throttle_node)
+
+    # Add event handlers to launch nodes sequentially
+    ld.add_action(RegisterEventHandler(
+        OnProcessStart(
+            target_action=high2low_node,
+            on_start=[imu_filter_node]
+        )
+    ))
+
+    ld.add_action(RegisterEventHandler(
+        OnProcessStart(
+            target_action=imu_filter_node,
+            on_start=[robot_localizaton_node]
+        )
+    ))
+
+    ld.add_action(RegisterEventHandler(
+        OnProcessStart(
+            target_action=robot_localizaton_node,
+            on_start=[ldlidar_slam_launch]
+        )
+    ))
+
+    ld.add_action(RegisterEventHandler(
+        OnProcessStart(
+            target_action=ldlidar_slam_launch,
+            on_start=[lidar_throttle_node]
+        )
+    ))
 
     return ld
 
