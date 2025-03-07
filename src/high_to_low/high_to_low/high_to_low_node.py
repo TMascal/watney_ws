@@ -17,9 +17,12 @@ class SerialNode(Node):
         self.declare_parameter('port', '/dev/serial0')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('use_mag', False)
+        self.declare_parameter('feedback_frequency', 25)
 
         port = self.get_parameter('port').get_parameter_value().string_value
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
+        feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().integer_value
+        self.use_mag = self.get_parameter('use_mag').get_parameter_value().bool_value
 
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
@@ -43,8 +46,8 @@ class SerialNode(Node):
         self.y_position = 0.0
         self.theta = 0.0
 
-        self.set_feedback_rate(25)
-        self.get_logger().info("Feedback frequency set to 25 Hz")
+        self.set_feedback_rate(feedback_freq)
+        self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
         self.imu_calibration()
         self.get_logger().info(f"IMU calibrating, please wait.")
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
@@ -85,7 +88,7 @@ class SerialNode(Node):
             if 'T' in json_data:
                 t_value = json_data['T']
                 handlers = {
-                    1001: lambda data: self.handle_1001(data, self.get_parameter('use_mag').get_parameter_value().bool_value),
+                    1001: lambda data: self.handle_1001(data, self.use_mag),
                 }
                 handler = handlers.get(t_value, self.handle_default)
                 handler(json_data)
@@ -144,7 +147,7 @@ class SerialNode(Node):
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
         imu_msg.header.frame_id = "imu_link"
-        if not use_mag:
+        if use_mag is False:
             imu_msg.orientation_covariance = [
                 0.0028, -0.0001, 0.0033,
                 -0.0001, 0.0001, 0.0010,
