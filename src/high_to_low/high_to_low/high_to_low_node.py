@@ -54,12 +54,15 @@ class SerialNode(Node):
 
     def read_serial(self):
         while rclpy.ok():
-            data = self.ser.readline().decode('utf-8')
-            if data:
-                msg = String()
-                msg.data = data
-                self.read_publisher.publish(msg)
-                self.handle_json(data)
+            try:
+                data = self.ser.readline().decode('utf-8')
+                if data:
+                    msg = String()
+                    msg.data = data
+                    self.read_publisher.publish(msg)
+                    self.handle_json(data)
+            except Exception as e:
+                self.get_logger().warning(f"Error reading serial data: {e}. Discarding data and attempting next message.")
 
     def set_feedback_rate(self, rate_hz):
         json_data = {
