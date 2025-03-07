@@ -63,6 +63,7 @@ class SerialNode(Node):
                     self.handle_json(data)
             except Exception as e:
                 self.get_logger().warning(f"Error reading serial data: {e}. Discarding data and attempting next message.")
+                self.ser.flush()  # Flush the serial input buffer
 
     def set_feedback_rate(self, rate_hz):
         json_data = {
