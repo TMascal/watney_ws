@@ -17,11 +17,11 @@ class SerialNode(Node):
         self.declare_parameter('port', '/dev/serial0')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('use_mag', False)
-        self.declare_parameter('feedback_frequency', 25)
+        self.declare_parameter('feedback_frequency', 25.0)
 
         port = self.get_parameter('port').get_parameter_value().string_value
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
-        feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().integer_value
+        feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().double_value
         self.use_mag = self.get_parameter('use_mag').get_parameter_value().bool_value
 
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)

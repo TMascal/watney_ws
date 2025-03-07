@@ -4,8 +4,16 @@ from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
+
+    frequency_arg = DeclareLaunchArgument(
+        'frequency',
+        default_value='25.0',
+        description='Flat sensor rate'
+    )
+
     # Get the package share directory
     watney_bringup_share_dir = get_package_share_directory('watney_bringup')
 
@@ -20,7 +28,8 @@ def generate_launch_description():
             package='high_to_low',
             executable='high_to_low_node',
             name='high_to_low_node',
-            output='screen'
+            output='screen',
+            parameters=[{'feedback_frequency': LaunchConfiguration('frequency')}]
         )
         
     # Launch imu_filter_madgwick node
@@ -38,21 +47,31 @@ def generate_launch_description():
             executable='ekf_node',
             name='ekf_filter_node',
             output='screen',
-            parameters=[ekf_param_file]
+            parameters=[ekf_param_file, {'frequency': LaunchConfiguration('frequency')}]
         )
 
     # Include ldlidar_slam launch file
     ldlidar_slam_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(ldlidar_slam_launch_file)
-    )
+            PythonLaunchDescriptionSource(ldlidar_slam_launch_file)
+        )
+
+    # Throttle LiDAR topic
+    lidar_throttle_node = Node(
+            package='topic_tools',
+            executable='throttle',
+            name='lidar_throttle',
+            arguments=['messages', '/ldlidar_node/scan', LaunchConfiguration('frequency')],  # Adjust '5.0' to your desired Hz
+            output='screen'
+        )
 
     ld = LaunchDescription()
 
-    # Launch Nav2 Lifecycle Manager
+    ld.add_entity(frequency_arg)
     ld.add_action(high2low_node)
     ld.add_action(imu_filter_node)
     ld.add_action(robot_localizaton_node)
     ld.add_action(ldlidar_slam_launch)
+    ld.add_action(lidar_throttle_node)
 
     return ld
 
