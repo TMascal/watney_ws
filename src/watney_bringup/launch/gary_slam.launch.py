@@ -80,11 +80,11 @@ def generate_launch_description():
 
     ld.add_entity(frequency_arg)
     ld.add_action(high2low_node)
-    ld.add_action(TimerAction(period=5.0, actions=[imu_filter_node]))  # Wait 5 seconds before launching imu_filter_node
+    ld.add_action(TimerAction(period=4.0, actions=[imu_filter_node]))  # Wait 5 seconds before launching imu_filter_node
     ld.add_action(TimerAction(period=5.0, actions=[robot_localizaton_node]))  # Wait 10 seconds before launching robot_localizaton_node
-    ld.add_action(TimerAction(period=15.0, actions=[ldlidar_slam_launch]))  # Wait 15 seconds before including ldlidar_slam_launch
-    ld.add_action(lidar_throttle_node)
-    ld.add_action(rviz2_node)
+    ld.add_action(TimerAction(period=10.0, actions=[ldlidar_slam_launch]))  # Wait 15 seconds before including ldlidar_slam_launch
+    ld.add_action(TimerAction(period=12.0, actions=[lidar_throttle_node]))  # Wait 20 seconds before launching lidar_throttle_node
+    ld.add_action(TimerAction(period=20.0, actions=[rviz2_node]))  # Wait 20 seconds before launching rviz2_node
 
     return ld
 
