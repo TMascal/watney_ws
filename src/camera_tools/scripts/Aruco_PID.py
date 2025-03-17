@@ -70,24 +70,24 @@ class ArUcoTracker(Node):
                 control_signal_y = np.clip(control_signal_y, -self.max_velocity, self.max_velocity)
                 control_signal_z = np.clip(control_signal_z, -self.max_velocity, self.max_velocity)
 
-                angular_z = np.arctan2(control_signal_y, control_signal_x)
+                angular_y = np.arctan2(control_signal_z, control_signal_x)
 
                 # Create and publish Twist message
                 twist_msg = Twist()
-                twist_msg.linear.x = control_signal_x
-                twist_msg.angular.z = angular_z
+                twist_msg.linear.x = control_signal_z
+                twist_msg.angular.z = angular_y
                 self.publisher.publish(twist_msg)
 
-                self.get_logger().info(f"Published: X={control_signal_x:.2f} m/s, Z={angular_z:.2f} rad/s")
+                self.get_logger().info(f"Published: X={control_signal_x:.2f} m/s, Z={angular_y:.2f} rad/s")
 
                 self.prev_transformation_matrix = curr_transformation_matrix
                 self.prev_time = curr_time
 
-        cv2.imshow('ArUco Tracker', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            self.cap.release()
-            cv2.destroyAllWindows()
-            rclpy.shutdown()
+        # cv2.imshow('ArUco Tracker', frame)
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     self.cap.release()
+        #     cv2.destroyAllWindows()
+        #     rclpy.shutdown()
 
 def main():
     rclpy.init()
