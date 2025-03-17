@@ -148,7 +148,7 @@ def main():
     try:
         node = MyServiceClientNode()
         response = node.process_hdr()
-        cv2.imwrite(f'/pictures/imageSample.jpg', response)
+        cv2.imwrite(f'/home/mark/watney_ws/pictures/image.jpg', response)
         node.get_logger().info(f'//home//mark//watney_ws//pictures//Save.jpg:')
 
         rclpy.spin(node)
