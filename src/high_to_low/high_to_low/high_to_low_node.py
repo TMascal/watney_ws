@@ -37,6 +37,9 @@ class SerialNode(Node):
         self.ser = serial.Serial(port, baudrate, dsrdtr=None)
         self.ser.setRTS(False)
         self.ser.setDTR(False)
+
+        self.calibration_event = threading.Event()
+        self.calibration_data = []  # Store calibration data temporarily
         self.serial_recv_thread = threading.Thread(target=self.read_serial)
         self.serial_recv_thread.daemon = True
         self.serial_recv_thread.start()
@@ -64,7 +67,12 @@ class SerialNode(Node):
                     msg = String()
                     msg.data = data
                     self.read_publisher.publish(msg)
-                    self.handle_json(data)
+
+                    # If calibration is ongoing, collect data
+                    if not self.calibration_event.is_set():
+                        self.calibration_data.append(data)
+                    else:
+                        self.handle_json(data)
             except Exception as e:
                 self.get_logger().warning(f"Error reading serial data: {e}. Discarding data and attempting next message.")
                 self.ser.flush()  # Flush the serial input buffer
@@ -91,20 +99,18 @@ class SerialNode(Node):
         self.write_serial(String(data=json_str_128))
 
     def hl_calibrate_imu(self, num_samples=1000):
-        accel_offset_x = 0.0
-        accel_offset_y = 0.0
-        accel_offset_z = 0.0
-        gyro_offset_x = 0.0
-        gyro_offset_y = 0.0
-        gyro_offset_z = 0.0
-
         self.get_logger().info("Starting IMU calibration... Keep sensor flat and steady!")
 
         ax, ay, az, gx, gy, gz = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
+        # Wait for enough data to be collected
+        while len(self.calibration_data) < num_samples:
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+        # Process the collected data
         for i in range(num_samples):
             try:
-                data = self.ser.readline().decode('utf-8')
+                data = self.calibration_data[i]
                 json_data = json.loads(data)
 
                 # Accumulate raw IMU data
@@ -135,6 +141,9 @@ class SerialNode(Node):
         # Store offsets for later use
         self.accel_offsets = (accel_offset_x, accel_offset_y, accel_offset_z)
         self.gyro_offsets = (gyro_offset_x, gyro_offset_y, gyro_offset_z)
+
+        # Signal that calibration is complete
+        self.calibration_event.set()
 
     def handle_json(self, data):
         try:
