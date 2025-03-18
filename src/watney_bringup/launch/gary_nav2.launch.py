@@ -38,7 +38,7 @@ def generate_launch_description():
             executable='high_to_low_node',
             name='high_to_low_node',
             output='screen',
-            parameters=[{'feedback_frequency': LaunchConfiguration('frequency')}]
+            # parameters=[{'feedback_frequency': LaunchConfiguration('frequency')}]
         )
         
     # Launch imu_filter_madgwick node

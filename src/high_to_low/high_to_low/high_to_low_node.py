@@ -17,11 +17,11 @@ class SerialNode(Node):
         self.declare_parameter('port', '/dev/serial0')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('use_mag', False)
-        self.declare_parameter('feedback_frequency', 25.0)
+        # self.declare_parameter('feedback_frequency', 25.0)
 
         port = self.get_parameter('port').get_parameter_value().string_value
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
-        feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().double_value
+        # feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().double_value
         self.use_mag = self.get_parameter('use_mag').get_parameter_value().bool_value
 
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
@@ -46,8 +46,9 @@ class SerialNode(Node):
         self.y_position = 0.0
         self.theta = 0.0
 
-        self.set_feedback_rate(feedback_freq)
-        self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
+        # self.set_feedback_rate(feedback_freq)
+        # self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
+        self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         self.imu_calibration()
         self.get_logger().info(f"IMU calibrating, please wait.")
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
