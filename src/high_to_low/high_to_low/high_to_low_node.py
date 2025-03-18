@@ -23,6 +23,8 @@ class SerialNode(Node):
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
         # feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().double_value
         self.use_mag = self.get_parameter('use_mag').get_parameter_value().bool_value
+        self.accel_offsets = (0.0, 0.0, 0.0)
+        self.gyro_offsets = (0.0, 0.0, 0.0)
 
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
@@ -50,6 +52,7 @@ class SerialNode(Node):
         # self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
         self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         self.imu_calibration()
+        self.hl_calibrate_imu()
         self.get_logger().info(f"IMU calibrating, please wait.")
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
@@ -86,6 +89,52 @@ class SerialNode(Node):
         }
         json_str_128 = json.dumps(json_data_128)
         self.write_serial(String(data=json_str_128))
+
+    def hl_calibrate_imu(self, num_samples=1000):
+        accel_offset_x = 0.0
+        accel_offset_y = 0.0
+        accel_offset_z = 0.0
+        gyro_offset_x = 0.0
+        gyro_offset_y = 0.0
+        gyro_offset_z = 0.0
+
+        self.get_logger().info("Starting IMU calibration... Keep sensor flat and steady!")
+
+        ax, ay, az, gx, gy, gz = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+        for i in range(num_samples):
+            try:
+                data = self.ser.readline().decode('utf-8')
+                json_data = json.loads(data)
+
+                # Accumulate raw IMU data
+                ax += float(json_data.get('ax', 0.0))
+                ay += float(json_data.get('ay', 0.0))
+                az += float(json_data.get('az', 0.0))
+                gx += float(json_data.get('gx', 0.0))
+                gy += float(json_data.get('gy', 0.0))
+                gz += float(json_data.get('gz', 0.0))
+
+            except Exception as e:
+                self.get_logger().warning(f"Error during calibration data collection: {e}")
+                continue
+
+        # Compute average offsets
+        accel_offset_x = ax / num_samples
+        accel_offset_y = ay / num_samples
+        accel_offset_z = (az / num_samples) - 8192  # Adjust Z to 1g (9.81 m/s^2)
+
+        gyro_offset_x = gx / num_samples
+        gyro_offset_y = gy / num_samples
+        gyro_offset_z = gz / num_samples
+
+        self.get_logger().info("IMU Calibration complete!")
+        self.get_logger().info(f"Accel Offsets: x={accel_offset_x}, y={accel_offset_y}, z={accel_offset_z}")
+        self.get_logger().info(f"Gyro Offsets: x={gyro_offset_x}, y={gyro_offset_y}, z={gyro_offset_z}")
+
+        # Store offsets for later use
+        self.accel_offsets = (accel_offset_x, accel_offset_y, accel_offset_z)
+        self.gyro_offsets = (gyro_offset_x, gyro_offset_y, gyro_offset_z)
 
     def handle_json(self, data):
         try:
@@ -165,18 +214,18 @@ class SerialNode(Node):
                 0.0008, -0.0009, 7.2158
             ]  # Calculated Covariances in Matlab w/ Magnetometer
 
-        imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0))/gyro_ssf * (math.pi / 180.0)
-        imu_msg.angular_velocity.y = float(json_data.get('gy', 0.0))/gyro_ssf * (math.pi / 180.0)
-        imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0))/gyro_ssf * (math.pi / 180.0)
+        imu_msg.angular_velocity.x = (float(json_data.get('gx', 0.0)) - self.gyro_offsets[0]) / gyro_ssf * (math.pi / 180.0)
+        imu_msg.angular_velocity.y = (float(json_data.get('gy', 0.0)) - self.gyro_offsets[1]) / gyro_ssf * (math.pi / 180.0)
+        imu_msg.angular_velocity.z = (float(json_data.get('gz', 0.0)) - self.gyro_offsets[2]) / gyro_ssf * (math.pi / 180.0)
         imu_msg.angular_velocity_covariance = [
             0.5669e-06, 0.0285e-06, -0.0037e-06,
             0.0285e-06, 0.5614e-06, 0.0141e-06,
             -0.0037e-06, 0.0141e-06, 0.4967e-06
         ] # Calculated Covariances in Matlab
         
-        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / accel_ssf * 9.81
-        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / accel_ssf * 9.81
-        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.x = (float(json_data.get('ax', 0.0)) - self.accel_offsets[0]) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.y = (float(json_data.get('ay', 0.0)) - self.accel_offsets[1]) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.z = (float(json_data.get('az', 0.0)) - self.accel_offsets[2]) / accel_ssf * 9.81
         imu_msg.linear_acceleration_covariance = [
             0.0015, 0.0000, -0.0000,
             0.0000, 0.0014, 0.0000,
