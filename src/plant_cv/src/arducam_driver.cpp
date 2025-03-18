@@ -13,7 +13,7 @@
 int main(int argc, char * argv[]) {
     rclcpp::init(argc, argv);
     auto node = rclcpp::Node::make_shared("image_publisher_node");
-    auto publisher = node->create_publisher<sensor_msgs::msg::Image>("camera/image_raw", 10);
+    auto publisher = node->create_publisher<sensor_msgs::msg::Image>("image_raw", 10);
 
     cv::VideoCapture cap(0, cv::CAP_V4L2);
     if (!cap.isOpened()) {
@@ -27,6 +27,9 @@ int main(int argc, char * argv[]) {
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, desired_height);
 
     cv::Mat frame;
+
+    // Set the rate (in Hz) for while loop execution
+    rclcpp::WallRate rate(10); // 30 Hz loop speed (adjust as needed)
     while (rclcpp::ok()) {
         cap >> frame;
         if (frame.empty()) {
@@ -34,13 +37,12 @@ int main(int argc, char * argv[]) {
             break;
         }
 
-        // Query the current exposure
-        double exposure = cap.get(cv::CAP_PROP_EXPOSURE);
-        RCLCPP_INFO(node->get_logger(), "Exposure time: %f", exposure);
 
         auto msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", frame).toImageMsg();
         publisher->publish(*msg);
         rclcpp::spin_some(node);
+
+        rate.sleep();
     }
 
     cap.release();

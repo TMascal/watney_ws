@@ -18,6 +18,7 @@
   <depend>std_srvs</depend>
   <depend>python3</depend>
   <depend>rclpy</depend>
+  <exec_depend>ros2launch</exec_depend>
 
 
   <test_depend>ament_lint_auto</test_depend>

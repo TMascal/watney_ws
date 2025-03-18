@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="plant_cv" exec="arducam_driver" name="cam_driver" namespace="top_cam"/>
+    <node pkg="camera_tools" exec="image_top_level.py" name="vision_system" namespace="top_cam"/>
+    <node pkg="camera_tools" exec="clarity_service.py" name="clarity" namespace="analysis"/>
+</launch>

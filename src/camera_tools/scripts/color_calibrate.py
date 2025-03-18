@@ -2,6 +2,8 @@
 
 import cv2
 import numpy as np
+import numpy as np
+from scipy.spatial.distance import cdist
 
 dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_1000)
 parameters = cv2.aruco.DetectorParameters()
@@ -71,9 +73,6 @@ detector = cv2.SimpleBlobDetector_create(params)
 # Load image and detect blobs
 keypoints = detector.detect(cropped_image)
 print("Detected blobs:", len(keypoints))
-
-import numpy as np
-from scipy.spatial.distance import cdist
 
 # Setup: Compute Expected Grid Centers
 # Assume keypoints have already been detected and are stored in 'keypoints'.

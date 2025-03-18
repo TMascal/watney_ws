@@ -13,6 +13,7 @@ find_package(sensor_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
         "srv/ChangeExposure.srv"
         "srv/TakePicture.srv"
+        "srv/CalcClarity.srv"
         DEPENDENCIES sensor_msgs
 )
 

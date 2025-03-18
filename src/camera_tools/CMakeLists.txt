@@ -15,6 +15,7 @@ find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(std_srvs REQUIRED)
 
+
 # Add the change_exposure_server executable
 add_executable(change_exposure_server src/change_exposure_server.cpp)
 ament_target_dependencies(change_exposure_server
@@ -57,6 +58,9 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+install(DIRECTORY launch
+        DESTINATION share/${PROJECT_NAME}
+)
 
 # Install the targets
 install(TARGETS
@@ -71,6 +75,9 @@ install(PROGRAMS
         scripts/take_and_store_picture.py
         scripts/take_picture_server.py
         scripts/color_calibrate.py
+        scripts/image_top_level.py
+        scripts/clarity_service.py
+        scripts/dom.py
         DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
