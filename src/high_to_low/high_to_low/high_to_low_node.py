@@ -56,7 +56,6 @@ class SerialNode(Node):
         self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         self.imu_calibration()
         self.hl_calibrate_imu()
-        self.get_logger().info(f"IMU calibrating, please wait.")
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
@@ -99,7 +98,7 @@ class SerialNode(Node):
         self.write_serial(String(data=json_str_128))
 
     def hl_calibrate_imu(self, num_samples=1000):
-        self.get_logger().info("Starting IMU calibration... Keep sensor flat and steady!")
+        self.get_logger().info("Starting IMU calibration... Keep sensor flat and steady! This is gonna take a hot second...")
 
         ax, ay, az, gx, gy, gz = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
 
