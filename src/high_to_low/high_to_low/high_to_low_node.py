@@ -54,7 +54,6 @@ class SerialNode(Node):
         # self.set_feedback_rate(feedback_freq)
         # self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
         self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
-        self.imu_calibration()
         # self.hl_calibrate_imu()
         # Cancelling event since no calibration
         self.calibration_event.set()
@@ -85,19 +84,6 @@ class SerialNode(Node):
         }
         json_str = json.dumps(json_data)
         self.write_serial(String(data=json_str))
-
-    def imu_calibration(self):
-        json_data_127 = {
-            "T": 127
-        }
-        json_str_127 = json.dumps(json_data_127)
-        self.write_serial(String(data=json_str_127))
-
-        json_data_128 = {
-            "T": 128
-        }
-        json_str_128 = json.dumps(json_data_128)
-        self.write_serial(String(data=json_str_128))
 
     def hl_calibrate_imu(self, num_samples=1000):
         self.get_logger().info("Starting IMU calibration... Keep sensor flat and steady! This is gonna take a hot second...")
