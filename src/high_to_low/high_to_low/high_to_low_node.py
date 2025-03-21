@@ -56,6 +56,8 @@ class SerialNode(Node):
         self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         self.imu_calibration()
         # self.hl_calibrate_imu()
+        # Cancelling event since no calibration
+        self.calibration_event.set()
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
