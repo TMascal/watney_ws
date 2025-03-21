@@ -55,7 +55,7 @@ class SerialNode(Node):
         # self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
         self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         self.imu_calibration()
-        self.hl_calibrate_imu()
+        # self.hl_calibrate_imu()
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
