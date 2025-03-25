@@ -24,7 +24,7 @@ class ArUcoTracker(Node):
         self.max_velocity = 2
 
         # PID Controllers
-        self.pid_x = PID(1, 0, 0, setpoint=0)
+        self.pid_x = PID(1, 0, 0, setpoint=.5)
         self.pid_y = PID(1, 0, 0, setpoint=0)
         self.pid_z = PID(1, 0, 0, setpoint=0)
 
@@ -61,33 +61,39 @@ class ArUcoTracker(Node):
                 dt = curr_time - self.prev_time
                 velocity = self.compute_velocity(self.prev_transformation_matrix, curr_transformation_matrix, dt)
 
+                # Calculate position error directly
                 position_error = curr_transformation_matrix[:3, 3] - self.desired_position
+
+                # Use PID controllers for each axis
                 control_signal_x = self.pid_x(position_error[0])
                 control_signal_y = self.pid_y(position_error[1])
                 control_signal_z = self.pid_z(position_error[2])
 
+                # Clip control signals to max velocity
                 control_signal_x = np.clip(control_signal_x, -self.max_velocity, self.max_velocity)
                 control_signal_y = np.clip(control_signal_y, -self.max_velocity, self.max_velocity)
                 control_signal_z = np.clip(control_signal_z, -self.max_velocity, self.max_velocity)
 
-                angular_y = np.arctan2(control_signal_z, control_signal_x)
+                # Calculate angular velocity for rotation
+                angular_z = np.arctan2(control_signal_y, control_signal_x)
 
                 # Create and publish Twist message
                 twist_msg = Twist()
-                twist_msg.linear.x = control_signal_z
-                twist_msg.angular.z = angular_y
+                twist_msg.linear.x = control_signal_x
+                twist_msg.angular.z = angular_z
                 self.publisher.publish(twist_msg)
 
-                self.get_logger().info(f"Published: X={control_signal_x:.2f} m/s, Z={angular_y:.2f} rad/s")
+                self.get_logger().info(f"Published: X={control_signal_x:.2f} m/s, Z={angular_z:.2f} rad/s")
 
+                # Update previous transformation matrix and time
                 self.prev_transformation_matrix = curr_transformation_matrix
                 self.prev_time = curr_time
 
-        # cv2.imshow('ArUco Tracker', frame)
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     self.cap.release()
-        #     cv2.destroyAllWindows()
-        #     rclpy.shutdown()
+        cv2.imshow('ArUco Tracker', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            self.cap.release()
+            cv2.destroyAllWindows()
+            rclpy.shutdown()
 
 def main():
     rclpy.init()
@@ -98,3 +104,10 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+# Have a "scanning mode" where the robot rotates in place and looks for the ArUco marker
+# Once the marker is detected, the robot will move towards the marker
+# The robot will stop when it reaches a certain distance from the marker
+# The robot will then switch to the side camera and use fine tuning to align itself with the marker
