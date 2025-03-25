@@ -17,7 +17,7 @@ class SerialNode(Node):
         self.declare_parameter('port', '/dev/serial0')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('use_mag', False)
-        self.declare_parameter('feedback_frequency', 500.0)
+        self.declare_parameter('feedback_frequency', 50.0)
 
         port = self.get_parameter('port').get_parameter_value().string_value
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
@@ -51,10 +51,11 @@ class SerialNode(Node):
         self.y_position = 0.0
         self.theta = 0.0
 
-        self.set_feedback_rate(feedback_freq)
-        self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
+        self.set_feedback_rate(500.0)
         # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         self.hl_calibrate_imu()
+        self.set_feedback_rate(feedback_freq)
+        self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
         # Cancelling event since no calibration
         # self.calibration_event.set()
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
