@@ -51,8 +51,7 @@ class SerialNode(Node):
         self.y_position = 0.0
         self.theta = 0.0
 
-        self.last_cmd_vel_time = self.get_clock().now()
-        self.velocity_timeout_timer = self.create_timer(1.0, self.check_velocity_timeout)
+        self.last_cmd_vel_time = None
 
         self.set_feedback_rate(500.0)
         # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
@@ -163,6 +162,9 @@ class SerialNode(Node):
 
     def check_velocity_timeout(self):
         """Check if no velocity command has been received for 3 seconds."""
+        if self.last_cmd_vel_time is None:
+            return  # Do nothing if no velocity commands have been received
+
         current_time = self.get_clock().now()
         time_since_last_cmd = (current_time - self.last_cmd_vel_time).nanoseconds / 1e9  # Convert to seconds
 
@@ -170,6 +172,7 @@ class SerialNode(Node):
             # Send zero velocity if timeout occurs
             self.get_logger().info("Velocity timeout detected. Sending zero velocity.")
             self.handle_cmd_vel(Twist())  # Send zero velocity
+            self.last_cmd_vel_time = None
 
     def handle_1001(self, json_data, use_mag):
         current_time = self.get_clock().now()
