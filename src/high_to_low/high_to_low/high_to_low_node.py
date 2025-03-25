@@ -52,6 +52,7 @@ class SerialNode(Node):
         self.theta = 0.0
 
         self.last_cmd_vel_time = None
+        self.velocity_timeout_timer = self.create_timer(3, self.check_velocity_timeout)
 
         self.set_feedback_rate(500.0)
         # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
