@@ -52,7 +52,6 @@ class SerialNode(Node):
         self.theta = 0.0
 
         self.last_cmd_vel_time = None
-        self.velocity_timeout_timer = self.create_timer(3, self.check_velocity_timeout)
 
         self.set_feedback_rate(500.0)
         # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
@@ -61,6 +60,7 @@ class SerialNode(Node):
         self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
         # Cancelling event since no calibration
         # self.calibration_event.set()
+        self.velocity_timeout_timer = self.create_timer(0.1, self.check_velocity_timeout)
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
