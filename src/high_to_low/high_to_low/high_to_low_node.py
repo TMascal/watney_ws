@@ -17,7 +17,7 @@ class SerialNode(Node):
         self.declare_parameter('port', '/dev/serial0')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('use_mag', False)
-        self.declare_parameter('feedback_frequency', 500)
+        self.declare_parameter('feedback_frequency', 500.0)
 
         port = self.get_parameter('port').get_parameter_value().string_value
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
