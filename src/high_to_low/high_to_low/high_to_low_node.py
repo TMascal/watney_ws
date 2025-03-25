@@ -54,9 +54,9 @@ class SerialNode(Node):
         self.set_feedback_rate(feedback_freq)
         self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
         # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
-        # self.hl_calibrate_imu()
+        self.hl_calibrate_imu()
         # Cancelling event since no calibration
-        self.calibration_event.set()
+        # self.calibration_event.set()
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
