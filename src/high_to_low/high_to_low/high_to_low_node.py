@@ -17,11 +17,11 @@ class SerialNode(Node):
         self.declare_parameter('port', '/dev/serial0')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('use_mag', False)
-        # self.declare_parameter('feedback_frequency', 25.0)
+        self.declare_parameter('feedback_frequency', 500)
 
         port = self.get_parameter('port').get_parameter_value().string_value
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
-        # feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().double_value
+        feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().double_value
         self.use_mag = self.get_parameter('use_mag').get_parameter_value().bool_value
         self.accel_offsets = (0.0, 0.0, 0.0)
         self.gyro_offsets = (0.0, 0.0, 0.0)
@@ -51,9 +51,9 @@ class SerialNode(Node):
         self.y_position = 0.0
         self.theta = 0.0
 
-        # self.set_feedback_rate(feedback_freq)
-        # self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
-        self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
+        self.set_feedback_rate(feedback_freq)
+        self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
+        # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         # self.hl_calibrate_imu()
         # Cancelling event since no calibration
         self.calibration_event.set()
