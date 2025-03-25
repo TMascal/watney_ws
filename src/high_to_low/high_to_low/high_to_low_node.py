@@ -211,9 +211,9 @@ class SerialNode(Node):
                 0.0008, -0.0009, 7.2158
             ]  # Calculated Covariances in Matlab w/ Magnetometer
 
-        imu_msg.angular_velocity.x = ((float(json_data.get('gx', 0.0)) - self.gyro_offsets[0]) / gyro_ssf) * (math.pi / 180.0)
-        imu_msg.angular_velocity.y = ((float(json_data.get('gy', 0.0)) - self.gyro_offsets[1]) / gyro_ssf) * (math.pi / 180.0)
-        imu_msg.angular_velocity.z = ((float(json_data.get('gz', 0.0)) - self.gyro_offsets[2]) / gyro_ssf) * (math.pi / 180.0)
+        imu_msg.angular_velocity.x = ((float(json_data.get('gx', 0.0)) - self.gyro_offsets[0]) / 1.0) * (math.pi / 180.0)
+        imu_msg.angular_velocity.y = ((float(json_data.get('gy', 0.0)) - self.gyro_offsets[1]) / 1.0) * (math.pi / 180.0)
+        imu_msg.angular_velocity.z = ((float(json_data.get('gz', 0.0)) - self.gyro_offsets[2]) / 1.0) * (math.pi / 180.0)
         imu_msg.angular_velocity_covariance = [
             0.5669e-06, 0.0285e-06, -0.0037e-06,
             0.0285e-06, 0.5614e-06, 0.0141e-06,
