@@ -51,6 +51,9 @@ class SerialNode(Node):
         self.y_position = 0.0
         self.theta = 0.0
 
+        self.last_cmd_vel_time = self.get_clock().now()
+        self.velocity_timeout_timer = self.create_timer(1.0, self.check_velocity_timeout)
+
         self.set_feedback_rate(500.0)
         # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         self.hl_calibrate_imu()
@@ -149,6 +152,7 @@ class SerialNode(Node):
             self.get_logger().error(f"Failed to decode JSON: {e}")
 
     def handle_cmd_vel(self, msg):
+        self.last_cmd_vel_time = self.get_clock().now()
         json_data = {
             "T": 13,
             "X": msg.linear.x,
@@ -156,6 +160,16 @@ class SerialNode(Node):
         }
         json_str = json.dumps(json_data)
         self.write_serial(String(data=json_str))
+
+    def check_velocity_timeout(self):
+        """Check if no velocity command has been received for 3 seconds."""
+        current_time = self.get_clock().now()
+        time_since_last_cmd = (current_time - self.last_cmd_vel_time).nanoseconds / 1e9  # Convert to seconds
+
+        if time_since_last_cmd > 3.0:
+            # Send zero velocity if timeout occurs
+            self.get_logger().info("Velocity timeout detected. Sending zero velocity.")
+            self.handle_cmd_vel(Twist())  # Send zero velocity
 
     def handle_1001(self, json_data, use_mag):
         current_time = self.get_clock().now()
