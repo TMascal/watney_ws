@@ -3,7 +3,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.launch_description_sources import PythonLaunchDescriptionSource, AnyLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
@@ -96,6 +96,10 @@ def generate_launch_description():
         arguments=[["-d"], [rviz2_config]]
     )
 
+    foxglove_launch = IncludeLaunchDescription(
+        AnyLaunchDescriptionSource(os.path.join(
+        get_package_share_directory('foxglove_bridge'),'launch','foxglove_bridge_launch.xml'))
+    )
 
     ld = LaunchDescription()
 
@@ -108,7 +112,8 @@ def generate_launch_description():
     ld.add_action(TimerAction(period=12.0, actions=[lidar_throttle_node]))  # Wait 20 seconds before launching lidar_throttle_node
     ld.add_action(TimerAction(period=15.0, actions=[nav2_launch]))  # Wait 15 seconds before including nav2_launch
     ld.add_action(TimerAction(period=20.0, actions=[rviz2_node]))  # Wait 20 seconds before launching rviz2_node
-
+    ld.add_action(foxglove_launch)
+    
     return ld
 
 if __name__ == '__main__':
