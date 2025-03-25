@@ -20,6 +20,8 @@ def generate_launch_description():
     # Define the path to the ekf.yaml file
     ekf_param_file = os.path.join(watney_bringup_share_dir, 'params', 'ekf.yaml')
 
+    madgwick_param_file = os.path.join(watney_bringup_share_dir, 'params', 'madgwick.yaml')
+
     # Define the path to the ldlidar_slam launch file
     ldlidar_slam_launch_file = os.path.join(watney_bringup_share_dir, 'launch', 'ldlidar_slam.launch.py')
 
@@ -55,7 +57,7 @@ def generate_launch_description():
             executable='imu_complementary_filter',
             name='imu_complementary_filter_node',
             output='screen',
-            parameters=[{'use_mag': False}]
+            parameters=[madgwick_param_file]
         )
         
     # Launch robot_localization node
