@@ -167,7 +167,7 @@ class SerialNode(Node):
         wheel_radius = .08
         #Sensitivity Scale Factors (see ICM20948 data sheet)
         accel_ssf = 8192
-        gyro_ssf = 131
+        gyro_ssf = 32.8
         magn_ssf = 0.15
 
 
