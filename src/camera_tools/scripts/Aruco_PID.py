@@ -67,9 +67,9 @@ class ArUcoTracker(Node):
                             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
                 # Use PID controllers for each axis
-                control_signal_x = self.pid_x(position_error[2])
+                control_signal_x = self.pid_x(position_error[0])
                 control_signal_y = self.pid_y(position_error[1])
-                control_signal_z = self.pid_z(position_error[0])
+                control_signal_z = self.pid_z(position_error[2])
 
                 control_signal_x = -1 * np.clip(control_signal_x, -self.max_velocity, self.max_velocity)
                 control_signal_y = np.clip(control_signal_y, -self.max_velocity, self.max_velocity)
