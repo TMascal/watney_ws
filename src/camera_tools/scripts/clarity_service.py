@@ -23,7 +23,7 @@ class ClarityService(Node):
         self.get_logger().info('Received video frame')
         frame = self.bridge.imgmsg_to_cv2(request.image)
         response.clarity_value = self.iqa.get_sharpness(frame)
-        self.get_logger().info('Calculated Clarity Value')
+        self.get_logger().info(f'Calculated Clarity Value {response.clarity_value}')
         return response
 
 def main(args=None):

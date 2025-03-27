@@ -16,6 +16,7 @@ from camera_tools_interfaces.srv import CalcClarity, VisionSystemCall
 
 import datetime
 import json
+import os
 
 class VisionSystem(Node):
     def __init__(self):
@@ -48,11 +49,15 @@ class VisionSystem(Node):
         self.frame = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
 
     def process_video(self, request, response):
+
+
         # Get Data
         self.current_time = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         aruco_id = request.id
+        self.get_logger().info(f'Received request for ID: {aruco_id}')
 
         while True:
+            self.get_logger().info('Processing Video')
             # Objective 1: Take a normal picture with auto aperature adjustment
             # Must Pass Clarity -> Bightness -> Save to Raw Data Folder
             image = self.frame
@@ -63,29 +68,32 @@ class VisionSystem(Node):
 
             # Run Through Clarity Service, and record into
             clarity_score = self.RequestClarity(image)
-            self.get_logger().log(f"Clarity Score is received {clarity_score}")
+            self.get_logger().info(f"Clarity Score is received: {clarity_score}")
 
 
-            if clarity_score < 1: # Needs to be calculated from experimental data
+            if clarity_score < 0.5: # Needs to be calculated from experimental data
                 self.get_logger().warn('Clarity Score is below Threshold, taking another picture')
                 continue
 
             # If Pass, Run Through Brightness Service
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             brightness = np.mean(gray)
+            self.get_logger().info(f"Brightness is received: {brightness}")
 
-            if brightness < 185:
+            if brightness < 100:
                 self.get_logger().warn('Brightness is below Threshold, taking another picture')
                 continue
 
-            return
+            self.get_logger().info('End Loop, saving data')
+            break
 
 
         # Save Photo and Test Results into Text File
-        save_path = "~/home/mark/Pictures/" + self.current_time + "/"
+        save_path = os.path.expanduser("~/Pictures/") + self.current_time + "/"
+        os.makedirs(save_path, exist_ok=True)  # Create the directory if it doesn't exist
         img_name = "basic_image_" + self.current_time + ".jpg"
         cv2.imwrite(save_path  + img_name, image)
-        import json
+        self.get_logger().info(f"Image Saved to {save_path}")
 
         # Load existing data or create an empty list
         try:
@@ -106,6 +114,8 @@ class VisionSystem(Node):
         with open(save_path + "metadata.json", "w") as file:
             json.dump(metadata, file, indent=4)
 
+        self.get_logger().info(f"Metadata Saved to {save_path}")
+
         # Objective 2: Take a Color Accurate Photo
             # Need to Implement Hardware to do this autonomously
 
@@ -113,7 +123,8 @@ class VisionSystem(Node):
 
         # Objective 4: Take a Color Accurate HDR Photo
 
-        # Return
+        # Return file path
+        response.file_path = save_path
 
     def RequestClarity(self, image):
         data = self.bridge.cv2_to_imgmsg(image, 'bgr8')  # Convert OpenCV image to ROS image message
@@ -145,7 +156,7 @@ def main(args=None):
     rclpy.init(args=args)
     node = VisionSystem()
     rclpy.spin_once(node)
-    node.process_video()
+    # node.process_video()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
