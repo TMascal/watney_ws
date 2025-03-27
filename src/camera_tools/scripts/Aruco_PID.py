@@ -24,7 +24,7 @@ class ArUcoTracker(Node):
         self.max_velocity = 0.1
 
         # PID Controllers
-        self.pid_x = PID(1, 0, 0, setpoint=0)
+        self.pid_x = PID(1, 0, 0, setpoint=0.5)
         self.pid_y = PID(1, 0, 0, setpoint=0)
         self.pid_z = PID(1, 0, 0, setpoint=0)
 
