@@ -10,7 +10,7 @@ class ArUcoTracker(Node):
     def __init__(self):
         super().__init__('aruco_tracker')
         self.publisher = self.create_publisher(Twist, '/cmd_vel', 10)
-        self.timer = self.create_timer(0.1, self.process_frame)  # 10 Hz
+        self.timer = self.create_timer(0.5, self.process_frame)  # 10 Hz
         self.cap = cv2.VideoCapture(0)
 
         self.dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_1000)
@@ -21,10 +21,10 @@ class ArUcoTracker(Node):
         self.prev_time = time.time()
 
         self.desired_position = np.array([0, 0, 0.5])
-        self.max_velocity = 0.5
+        self.max_velocity = 0.1
 
         # PID Controllers
-        self.pid_x = PID(1, 0, 0, setpoint=0)
+        self.pid_x = PID(1, 0, 0, setpoint=0.5)
         self.pid_y = PID(1, 0, 0, setpoint=0)
         self.pid_z = PID(1, 0, 0, setpoint=0)
 
@@ -71,11 +71,11 @@ class ArUcoTracker(Node):
                 control_signal_y = self.pid_y(position_error[1])
                 control_signal_z = self.pid_z(position_error[2])
 
-                control_signal_x = np.clip(control_signal_x, -self.max_velocity, self.max_velocity)
+                control_signal_x = -1 * np.clip(control_signal_x, -self.max_velocity, self.max_velocity)
                 control_signal_y = np.clip(control_signal_y, -self.max_velocity, self.max_velocity)
                 control_signal_z = np.clip(control_signal_z, -self.max_velocity, self.max_velocity)
 
-                angular_z = np.arctan2(control_signal_y, control_signal_x)
+                angular_z = (control_signal_x * np.sin(np.arctan2(control_signal_y, control_signal_x)))/0.172
 
                 # Create and publish Twist message
                 twist_msg = Twist()
