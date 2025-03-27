@@ -71,11 +71,11 @@ class ArUcoTracker(Node):
                 control_signal_y = self.pid_y(position_error[1])
                 control_signal_z = self.pid_z(position_error[2])
 
-                control_signal_x = np.clip(control_signal_x, -self.max_velocity, self.max_velocity)
+                control_signal_x = -1 * np.clip(control_signal_x, -self.max_velocity, self.max_velocity)
                 control_signal_y = np.clip(control_signal_y, -self.max_velocity, self.max_velocity)
                 control_signal_z = np.clip(control_signal_z, -self.max_velocity, self.max_velocity)
 
-                angular_z =-1* (control_signal_x * np.sin(np.arctan2(control_signal_y, control_signal_x)))/0.172
+                angular_z = (control_signal_x * np.sin(np.arctan2(control_signal_y, control_signal_x)))/0.172
 
                 # Create and publish Twist message
                 twist_msg = Twist()
