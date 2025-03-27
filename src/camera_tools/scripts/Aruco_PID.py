@@ -82,9 +82,12 @@ class ArUcoTracker(Node):
                 twist_msg = Twist()
                 # twist_msg.linear.x = control_signal_x
                 # twist_msg.angular.z = angular_z
-                twist_msg.linear.x = float(self.THISONE[0])
-                twist_msg.linear.y = float(self.THISONE[1])
-                twist_msg.linear.z = float(self.THISONE[2])
+                # twist_msg.linear.x = float(self.THISONE[0])
+                # twist_msg.linear.y = float(self.THISONE[1])
+                # twist_msg.linear.z = float(self.THISONE[2])
+                print(self.THISONE[0])
+                print(self.THISONE[1])
+                print(self.THISONE[2])
                 self.publisher.publish(twist_msg)
 
                 self.get_logger().info(f"Published: X={control_signal_x:.2f} m/s, Z={angular_z:.2f} rad/s")
