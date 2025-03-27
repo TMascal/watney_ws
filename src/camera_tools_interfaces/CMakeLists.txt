@@ -14,6 +14,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "srv/ChangeExposure.srv"
         "srv/TakePicture.srv"
         "srv/CalcClarity.srv"
+        "srv/VisionSystemCall.srv"
         DEPENDENCIES sensor_msgs
 )
 
