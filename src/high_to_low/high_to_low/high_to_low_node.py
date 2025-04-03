@@ -188,7 +188,7 @@ class SerialNode(Node):
         gyro_ssf = 32.8
         magn_ssf = 0.15
         #Encoder pulses per revolution:
-        ppr = 2100.0
+        ppr = 1650
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
