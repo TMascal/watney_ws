@@ -34,7 +34,7 @@ class MoveToXGoal(Node):
             twist = Twist()
             twist.linear.x = x_speed
             self.cmd_vel_pub.publish(twist)
-            self.get_logger().info("Sending velocity command...")
+            # self.get_logger().info("Sending velocity command...")
 
     def stop_robot(self):
         twist = Twist()
