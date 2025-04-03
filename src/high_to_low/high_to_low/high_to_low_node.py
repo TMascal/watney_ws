@@ -182,13 +182,13 @@ class SerialNode(Node):
 
         #Physical Constants
         width = 0.172
-        wheel_radius = 0.039625
+        wheel_diameter = 0.08
         #Sensitivity Scale Factors (see ICM20948 data sheet)
         accel_ssf = 8192
         gyro_ssf = 32.8
         magn_ssf = 0.15
         #Encoder pulses per revolution:
-        ppr = 1092.0
+        ppr = 1650.0
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
@@ -202,7 +202,7 @@ class SerialNode(Node):
         self.previous_odl = odl
         self.previous_odr = odr
 
-        linear_velocity_x = (rVel + lVel) / 2
+        linear_velocity_x = (rVel + lVel) / 2.0
         angular_velocity_z = (rVel - lVel) / width
 
         delta_theta = angular_velocity_z * delta_time # I don't like this
@@ -210,7 +210,7 @@ class SerialNode(Node):
         # if self.theta > math.pi:
         #     self.theta -= 2 * math.pi
 
-        delta_x = wheel_radius * ((delta_odr + delta_odl) / 2)
+        delta_x = wheel_diameter / 2.0 * ((delta_odr + delta_odl) / 2)
         delta_y = delta_x * math.sin(self.theta + (delta_odr + delta_odl) / width)
 
         self.x_position += delta_x
