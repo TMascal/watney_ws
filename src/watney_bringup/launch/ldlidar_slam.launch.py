@@ -86,23 +86,7 @@ def generate_launch_description():
         executable='static_transform_publisher',
         name='static_transform_publisher',
         output='screen',
-        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_footprint']
-    )
-
-    # RVIZ2 settings
-    rviz2_config = os.path.join(
-        get_package_share_directory('watney_bringup'),
-        'config',
-        'ldlidar_slam.rviz'
-    )
-
-    # RVIZ2node
-    rviz2_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        name='rviz2',
-        output='screen',
-        arguments=[["-d"], [rviz2_config]]
+        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_link']
     )
 
     # Define LaunchDescription variable
@@ -119,8 +103,5 @@ def generate_launch_description():
 
     # Call LDLidar launch
     ld.add_action(ldlidar_launch)
-
-    # Start RVIZ2
-    ld.add_action(rviz2_node)
 
     return ld

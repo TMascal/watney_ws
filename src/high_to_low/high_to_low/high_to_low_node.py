@@ -17,9 +17,14 @@ class SerialNode(Node):
         self.declare_parameter('port', '/dev/serial0')
         self.declare_parameter('baudrate', 115200)
         self.declare_parameter('use_mag', False)
+        self.declare_parameter('feedback_frequency', 50.0)
 
         port = self.get_parameter('port').get_parameter_value().string_value
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
+        feedback_freq = self.get_parameter('feedback_frequency').get_parameter_value().double_value
+        self.use_mag = self.get_parameter('use_mag').get_parameter_value().bool_value
+        self.accel_offsets = (0.0, 0.0, 0.0)
+        self.gyro_offsets = (0.0, 0.0, 0.0)
 
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
@@ -32,6 +37,9 @@ class SerialNode(Node):
         self.ser = serial.Serial(port, baudrate, dsrdtr=None)
         self.ser.setRTS(False)
         self.ser.setDTR(False)
+
+        self.calibration_event = threading.Event()
+        self.calibration_data = []  # Store calibration data temporarily
         self.serial_recv_thread = threading.Thread(target=self.read_serial)
         self.serial_recv_thread.daemon = True
         self.serial_recv_thread.start()
@@ -43,20 +51,35 @@ class SerialNode(Node):
         self.y_position = 0.0
         self.theta = 0.0
 
-        self.set_feedback_rate(25)
-        self.get_logger().info("Feedback frequency set to 25 Hz")
-        self.imu_calibration()
-        self.get_logger().info(f"IMU calibrating, please wait.")
+        self.last_cmd_vel_time = None
+
+        self.set_feedback_rate(500.0)
+        # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
+        self.hl_calibrate_imu()
+        self.set_feedback_rate(feedback_freq)
+        self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
+        # Cancelling event since no calibration
+        # self.calibration_event.set()
+        self.velocity_timeout_timer = self.create_timer(0.1, self.check_velocity_timeout)
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
     def read_serial(self):
         while rclpy.ok():
-            data = self.ser.readline().decode('utf-8')
-            if data:
-                msg = String()
-                msg.data = data
-                self.read_publisher.publish(msg)
-                self.handle_json(data)
+            try:
+                data = self.ser.readline().decode('utf-8')
+                if data:
+                    msg = String()
+                    msg.data = data
+                    self.read_publisher.publish(msg)
+
+                    # If calibration is ongoing, collect data
+                    if not self.calibration_event.is_set():
+                        self.calibration_data.append(data)
+                    else:
+                        self.handle_json(data)
+            except Exception as e:
+                self.get_logger().warning(f"Error reading serial data: {e}. Discarding data and attempting next message.")
+                self.ser.flush()  # Flush the serial input buffer
 
     def set_feedback_rate(self, rate_hz):
         json_data = {
@@ -66,18 +89,52 @@ class SerialNode(Node):
         json_str = json.dumps(json_data)
         self.write_serial(String(data=json_str))
 
-    def imu_calibration(self):
-        json_data_127 = {
-            "T": 127
-        }
-        json_str_127 = json.dumps(json_data_127)
-        self.write_serial(String(data=json_str_127))
+    def hl_calibrate_imu(self, num_samples=1000):
+        self.get_logger().info("Starting IMU calibration... Keep sensor flat and steady! This is gonna take a hot second...")
 
-        json_data_128 = {
-            "T": 128
-        }
-        json_str_128 = json.dumps(json_data_128)
-        self.write_serial(String(data=json_str_128))
+        ax, ay, az, gx, gy, gz = 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+        # Wait for enough data to be collected
+        while len(self.calibration_data) < num_samples:
+            rclpy.spin_once(self, timeout_sec=0.1)
+
+        # Process the collected data
+        for i in range(num_samples):
+            try:
+                data = self.calibration_data[i]
+                json_data = json.loads(data)
+
+                # Accumulate raw IMU data
+                ax += float(json_data.get('ax', 0.0))
+                ay += float(json_data.get('ay', 0.0))
+                az += float(json_data.get('az', 0.0))
+                gx += float(json_data.get('gx', 0.0))
+                gy += float(json_data.get('gy', 0.0))
+                gz += float(json_data.get('gz', 0.0))
+
+            except Exception as e:
+                self.get_logger().warning(f"Error during calibration data collection: {e}")
+                continue
+
+        # Compute average offsets
+        accel_offset_x = ax / num_samples
+        accel_offset_y = ay / num_samples
+        accel_offset_z = (az / num_samples) - 8192  # Adjust Z to 1g (9.81 m/s^2)
+
+        gyro_offset_x = gx / num_samples
+        gyro_offset_y = gy / num_samples
+        gyro_offset_z = gz / num_samples
+
+        self.get_logger().info("IMU Calibration complete!")
+        self.get_logger().info(f"Accel Offsets: x={accel_offset_x}, y={accel_offset_y}, z={accel_offset_z}")
+        self.get_logger().info(f"Gyro Offsets: x={gyro_offset_x}, y={gyro_offset_y}, z={gyro_offset_z}")
+
+        # Store offsets for later use
+        self.accel_offsets = (accel_offset_x, accel_offset_y, accel_offset_z)
+        self.gyro_offsets = (gyro_offset_x, gyro_offset_y, gyro_offset_z)
+
+        # Signal that calibration is complete
+        self.calibration_event.set()
 
     def handle_json(self, data):
         try:
@@ -85,7 +142,7 @@ class SerialNode(Node):
             if 'T' in json_data:
                 t_value = json_data['T']
                 handlers = {
-                    1001: lambda data: self.handle_1001(data, self.get_parameter('use_mag').get_parameter_value().bool_value),
+                    1001: lambda data: self.handle_1001(data, self.use_mag),
                 }
                 handler = handlers.get(t_value, self.handle_default)
                 handler(json_data)
@@ -95,6 +152,7 @@ class SerialNode(Node):
             self.get_logger().error(f"Failed to decode JSON: {e}")
 
     def handle_cmd_vel(self, msg):
+        self.last_cmd_vel_time = self.get_clock().now()
         json_data = {
             "T": 13,
             "X": msg.linear.x,
@@ -102,6 +160,20 @@ class SerialNode(Node):
         }
         json_str = json.dumps(json_data)
         self.write_serial(String(data=json_str))
+
+    def check_velocity_timeout(self):
+        """Check if no velocity command has been received for 3 seconds."""
+        if self.last_cmd_vel_time is None:
+            return  # Do nothing if no velocity commands have been received
+
+        current_time = self.get_clock().now()
+        time_since_last_cmd = (current_time - self.last_cmd_vel_time).nanoseconds / 1e9  # Convert to seconds
+
+        if time_since_last_cmd > 3.0:
+            # Send zero velocity if timeout occurs
+            self.get_logger().info("Velocity timeout detected. Sending zero velocity.")
+            self.handle_cmd_vel(Twist())  # Send zero velocity
+            self.last_cmd_vel_time = None
 
     def handle_1001(self, json_data, use_mag):
         current_time = self.get_clock().now()
@@ -113,7 +185,7 @@ class SerialNode(Node):
         wheel_radius = .08
         #Sensitivity Scale Factors (see ICM20948 data sheet)
         accel_ssf = 8192
-        gyro_ssf = 65.5
+        gyro_ssf = 32.8
         magn_ssf = 0.15
 
 
@@ -144,7 +216,7 @@ class SerialNode(Node):
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
         imu_msg.header.frame_id = "imu_link"
-        if not use_mag:
+        if use_mag is False:
             imu_msg.orientation_covariance = [
                 0.0028, -0.0001, 0.0033,
                 -0.0001, 0.0001, 0.0010,
@@ -157,18 +229,18 @@ class SerialNode(Node):
                 0.0008, -0.0009, 7.2158
             ]  # Calculated Covariances in Matlab w/ Magnetometer
 
-        imu_msg.angular_velocity.x = float(json_data.get('gx', 0.0))/gyro_ssf * (math.pi / 180.0)
-        imu_msg.angular_velocity.y = float(json_data.get('gy', 0.0))/gyro_ssf * (math.pi / 180.0)
-        imu_msg.angular_velocity.z = float(json_data.get('gz', 0.0))/gyro_ssf * (math.pi / 180.0)
+        imu_msg.angular_velocity.x = ((float(json_data.get('gx', 0.0)) - self.gyro_offsets[0]) / gyro_ssf) * (math.pi / 180.0)
+        imu_msg.angular_velocity.y = ((float(json_data.get('gy', 0.0)) - self.gyro_offsets[1]) / gyro_ssf) * (math.pi / 180.0)
+        imu_msg.angular_velocity.z = ((float(json_data.get('gz', 0.0)) - self.gyro_offsets[2]) / gyro_ssf) * (math.pi / 180.0)
         imu_msg.angular_velocity_covariance = [
             0.5669e-06, 0.0285e-06, -0.0037e-06,
             0.0285e-06, 0.5614e-06, 0.0141e-06,
             -0.0037e-06, 0.0141e-06, 0.4967e-06
         ] # Calculated Covariances in Matlab
         
-        imu_msg.linear_acceleration.x = float(json_data.get('ax', 0.0)) / accel_ssf * 9.81
-        imu_msg.linear_acceleration.y = float(json_data.get('ay', 0.0)) / accel_ssf * 9.81
-        imu_msg.linear_acceleration.z = float(json_data.get('az', 0.0)) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.x = (float(json_data.get('ax', 0.0)) - self.accel_offsets[0]) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.y = (float(json_data.get('ay', 0.0)) - self.accel_offsets[1]) / accel_ssf * 9.81
+        imu_msg.linear_acceleration.z = (float(json_data.get('az', 0.0)) - self.accel_offsets[2]) / accel_ssf * 9.81
         imu_msg.linear_acceleration_covariance = [
             0.0015, 0.0000, -0.0000,
             0.0000, 0.0014, 0.0000,

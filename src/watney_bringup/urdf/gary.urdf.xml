@@ -2,12 +2,12 @@
 <robot name="ugv_rover">
 
   <!-- Base -->
-  <link name="base_footprint"/>
+  <link name="base_link"/>
 
-  <link name="base_link">
+  <link name="base_chassis">
     <inertial>
       <origin
-        xyz="-0.000460087791654118 -6.50856019576702E-10 -0.0147959620149623"
+        xyz="0 0 0"
         rpy="0 0 0" />
       <mass
         value="2.78375064359473" />
@@ -44,11 +44,20 @@
     </collision>
   </link>
 
+  <joint name="base_chassis_to_base_link" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_chassis"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="base_footprint"/>
+
   <!-- Base to footprint joint -->
   <joint name="base_joint" type="fixed">
-    <parent link="base_footprint"/>
-    <child link="base_link"/>
-    <origin xyz="0.000460087791654118 6.50856019576702E-10 0.08" rpy="0 0 0"/> 
+    <parent link="base_link"/>
+    <child link="base_footprint"/>
+    <!-- This could be wrong-->
+    <origin xyz="0 0 -0.08" rpy="0 0 0"/> 
   </joint>
 
 
@@ -68,7 +77,7 @@
   <joint name="lidar2ugv_joint" type="fixed">
     <parent link="base_link"/>
     <child link="ldlidar_base"/>
-    <origin xyz="0.045 0.062 0.0" rpy="0 0 0"/>
+    <origin xyz="0.03 0.052 -0.02" rpy="0 0 0"/>
   </joint>
 
   <link name="ldlidar_link" />
@@ -87,6 +96,220 @@
     <parent link="base_link"/>
     <child link="imu_link"/>
     <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+
+
+  <!-- Wheels -->
+  <link name="left_up_wheel_link">
+    <inertial>
+      <origin
+        xyz="1.38777878078145E-17 1.38777878078145E-17 0"
+        rpy="1.5708 0 0" />
+      <mass
+        value="0.207085933743005" />
+      <inertia
+        ixx="0.000116541923504163"
+        ixy="-1.59309191113245E-55"
+        ixz="-3.43238458333891E-37"
+        iyy="0.000170742352371108"
+        iyz="-3.6165187302327E-37"
+        izz="0.000116541923504163" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/left_up_wheel_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/left_up_wheel_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_up_wheel_link_joint"
+    type="continuous">
+    <origin
+      xyz="0.0855 0.08726 -0.04121"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_up_wheel_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+
+  <link name="left_down_wheel_link">
+    <inertial>
+      <origin
+        xyz="0 1.38777878078145E-17 0"
+        rpy="1.5708 0 0" />
+      <mass
+        value="0.207085933743005" />
+      <inertia
+        ixx="0.000116541923504163"
+        ixy="-1.59309191113245E-55"
+        ixz="-3.43238458333891E-37"
+        iyy="0.000170742352371108"
+        iyz="-3.6165187302327E-37"
+        izz="0.000116541923504163" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/left_down_wheel_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/left_down_wheel_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="left_down_wheel_link_joint"
+    type="continuous">
+    <origin
+      xyz="-0.0855 0.08726 -0.04121"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_down_wheel_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+
+  <link name="right_up_wheel_link">
+    <inertial>
+      <origin
+        xyz="1.38777878078145E-17 -1.38777878078145E-17 0"
+        rpy="1.5708 0 0" />
+      <mass
+        value="0.207085933743005" />
+      <inertia
+        ixx="0.000116541923504163"
+        ixy="-1.59309191113245E-55"
+        ixz="-3.43238458333891E-37"
+        iyy="0.000170742352371108"
+        iyz="-3.6165187302327E-37"
+        izz="0.000116541923504163" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/right_up_wheel_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/right_up_wheel_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="right_up_wheel_link_joint"
+    type="continuous">
+    <origin
+      xyz="0.0855 -0.08726 -0.04121"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="right_up_wheel_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+
+  <link name="right_down_wheel_link">
+    <inertial>
+      <origin
+        xyz="0 -1.38777878078145E-17 0"
+        rpy="1.5708 0 0" />
+      <mass
+        value="0.207085933743005" />
+      <inertia
+        ixx="0.000116541923504163"
+        ixy="-1.59309191113245E-55"
+        ixz="-3.43238458333891E-37"
+        iyy="0.000170742352371108"
+        iyz="-3.6165187302327E-37"
+        izz="0.000116541923504163" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/right_down_wheel_link.stl" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.627450980392157 0.627450980392157 0.627450980392157 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <mesh
+          filename="package://watney_bringup/meshes/right_down_wheel_link.stl" />
+      </geometry>
+    </collision>
+  </link>
+  
+  <joint name="right_down_wheel_link_joint"
+    type="continuous">
+    <origin
+      xyz="-0.0855 -0.08726 -0.04121"
+      rpy="1.5708 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="right_down_wheel_link" />
+    <axis
+      xyz="0 0 -1" />
   </joint>
 
 </robot>
