@@ -192,15 +192,14 @@ class SerialNode(Node):
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
-        odl = float(json_data.get('odl', 0.0)) / ppr
-        odr = float(json_data.get('odr', 0.0)) / ppr
+        odl = float(json_data.get('odl', 0.0))
+        odr = float(json_data.get('odr', 0.0))
 
-        delta_odl = odl - self.previous_odl
-        delta_odr = odr - self.previous_odr
-        left_wheel_position = odl
-        right_wheel_position = odr
-        self.previous_odl = odl
-        self.previous_odr = odr
+        odl_m = math.pi * wheel_diameter * (odl / ppr)
+        odr_m = math.pi * wheel_diameter * (odr / ppr)
+
+        left_wheel_position = 2.0 * math.pi * (odl / ppr)
+        right_wheel_position = 2.0 * math.pi * (odr / ppr)
 
         linear_velocity_x = (rVel + lVel) / 2.0
         angular_velocity_z = (rVel - lVel) / width
@@ -210,11 +209,8 @@ class SerialNode(Node):
         # if self.theta > math.pi:
         #     self.theta -= 2 * math.pi
 
-        delta_x = math.pi * wheel_diameter * ((delta_odr + delta_odl) / 2.0)
-        delta_y = delta_x * math.sin(self.theta + (delta_odr + delta_odl) / width)
-
-        self.x_position += delta_x
-        self.y_position += delta_y
+        self.x_position = (odl_m + odr_m) / 2.0
+        self.y_position = self.x_position * math.sin(self.theta + (odr_m + odl_m) / width)
 
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
