@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import time
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -15,6 +16,7 @@ class MoveToXGoal(Node):
         self.target_distance = target_distance
         self.target_reached = False
         self.measured_error = None  # To store the error after the run
+        self.max_vel = 0.1
 
     def odom_callback(self, msg):
         if self.initial_x is None:
@@ -29,13 +31,13 @@ class MoveToXGoal(Node):
             self.get_logger().info(f"Target reached at X: {self.current_x}")
             self.stop_robot()
 
-    def send_velocity(self, x_speed=0.1):
+    def send_velocity(self):
         if self.initial_x is None:
             self.get_logger().info("Waiting for odom message...")
             return
         if not self.target_reached:
             twist = Twist()
-            twist.linear.x = x_speed
+            twist.linear.x = self.max_vel
             self.cmd_vel_pub.publish(twist)
 
     def stop_robot(self):
@@ -55,14 +57,24 @@ def main():
 
         node = MoveToXGoal(target_distance)
         rate = node.create_rate(10)  # 10 Hz loop
+        safety_factor = 1.5
+        expected_time = target_distance / node.max_vel * safety_factor
+        start_time = time.time()
 
         while rclpy.ok() and not node.target_reached:
             node.send_velocity()
-            rclpy.spin_once(node, timeout_sec=0.1)  # Process callbacks
+            rclpy.spin_once(node, timeout_sec=0.1)
+            elapsed = time.time() - start_time
+            if elapsed > expected_time:
+                node.get_logger().info("Test failed: runtime exceeded safety limit.")
+                node.stop_robot()
+                break
 
-        # Print the measured error after the run
-        if node.measured_error is not None:
+        # Print the measured error after the run if target reached
+        if node.target_reached and node.measured_error is not None:
             print(f"Measured error: {node.measured_error:.4f} meters")
+        elif not node.target_reached:
+            print("Test failed: target not reached within expected time.")
 
         node.destroy_node()
 
