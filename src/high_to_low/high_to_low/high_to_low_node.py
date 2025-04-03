@@ -205,13 +205,13 @@ class SerialNode(Node):
         linear_velocity_x = (rVel + lVel) / 2
         angular_velocity_z = (rVel - lVel) / width
 
-        delta_theta = angular_velocity_z * delta_time
+        delta_theta = angular_velocity_z * delta_time # I don't like this
         self.theta = (self.theta + delta_theta) % (2 * math.pi)
         if self.theta > math.pi:
             self.theta -= 2 * math.pi
 
-        delta_x = wheel_radius * ((delta_odr + delta_odl) / 2) * math.cos(self.theta)
-        delta_y = wheel_radius * ((delta_odr + delta_odl) / 2) * math.sin(self.theta)
+        delta_x = wheel_radius * ((delta_odr + delta_odl) / 2)
+        delta_y = delta_x * math.sin(self.theta + (delta_odr + delta_odl) / width)
 
         self.x_position += delta_x
         self.y_position += delta_y
