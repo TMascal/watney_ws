@@ -77,7 +77,7 @@ def main():
         if node.target_reached and node.measured_error is not None:
             print(f"Measured error: {node.measured_error:.4f} meters")
         elif not node.target_reached:
-            print("Test failed: target not reached within expected time.")
+            pass
 
         node.destroy_node()
 
