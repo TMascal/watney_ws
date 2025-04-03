@@ -29,7 +29,7 @@ class MoveToXGoal(Node):
             self.get_logger().info(f"Target reached at X: {self.current_x}")
             self.stop_robot()
 
-    def send_velocity(self, x_speed=0.2):
+    def send_velocity(self, x_speed=0.1):
         if not self.target_reached:
             twist = Twist()
             twist.linear.x = x_speed
