@@ -192,8 +192,8 @@ class SerialNode(Node):
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
-        odl = float(json_data.get('odl', 0.0))/ppr * 2 * math.pi # Convert to Rad
-        odr = float(json_data.get('odr', 0.0))/ppr * 2 * math.pi # Convert to Rad
+        odl = float(json_data.get('odl', 0.0))/ppr * 2.0 * math.pi # Convert to Rad
+        odr = float(json_data.get('odr', 0.0))/ppr * 2.0 * math.pi # Convert to Rad
 
         delta_odl = odl - self.previous_odl
         delta_odr = odr - self.previous_odr
