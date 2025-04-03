@@ -30,11 +30,13 @@ class MoveToXGoal(Node):
             self.stop_robot()
 
     def send_velocity(self, x_speed=0.1):
+        if self.initial_x is None:
+            self.get_logger().info("Waiting for odom message...")
+            return
         if not self.target_reached:
             twist = Twist()
             twist.linear.x = x_speed
             self.cmd_vel_pub.publish(twist)
-            # self.get_logger().info("Sending velocity command...")
 
     def stop_robot(self):
         twist = Twist()
