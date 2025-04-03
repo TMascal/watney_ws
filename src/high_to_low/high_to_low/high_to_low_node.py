@@ -192,13 +192,13 @@ class SerialNode(Node):
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
-        odl = float(json_data.get('odl', 0.0))/ppr # Convert to meters
-        odr = float(json_data.get('odr', 0.0))/ppr # Convert to meters
+        odl = float(json_data.get('odl', 0.0))/ppr * 2 * math.pi # Convert to Rad
+        odr = float(json_data.get('odr', 0.0))/ppr * 2 * math.pi # Convert to Rad
 
         delta_odl = odl - self.previous_odl
         delta_odr = odr - self.previous_odr
-        left_wheel_position = delta_odl / wheel_radius
-        right_wheel_position = delta_odr / wheel_radius
+        left_wheel_position = odl
+        right_wheel_position = odr
         self.previous_odl = odl
         self.previous_odr = odr
 
@@ -210,9 +210,8 @@ class SerialNode(Node):
         if self.theta > math.pi:
             self.theta -= 2 * math.pi
 
-
-        delta_x = linear_velocity_x * delta_time * math.cos(self.theta)
-        delta_y = linear_velocity_x * delta_time * math.sin(self.theta)
+        delta_x = wheel_radius * ((delta_odr + delta_odl) / 2) * math.cos(self.theta)
+        delta_y = wheel_radius * ((delta_odr + delta_odl) / 2) * math.sin(self.theta)
 
         self.x_position += delta_x
         self.y_position += delta_y
