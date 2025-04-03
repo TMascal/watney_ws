@@ -40,7 +40,6 @@ class MoveToXGoal(Node):
         twist = Twist()
         self.cmd_vel_pub.publish(twist)  # Publish zero velocity
         self.get_logger().info("Stopping robot.")
-        rclpy.shutdown()
 
 def main():
     rclpy.init()
