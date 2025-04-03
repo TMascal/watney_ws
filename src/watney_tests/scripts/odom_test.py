@@ -6,12 +6,13 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
 class MoveToXGoal(Node):
-    def __init__(self):
+    def __init__(self, target_distance):
         super().__init__('move_to_x_goal')
         self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         self.odom_sub = self.create_subscription(Odometry, '/odom', self.odom_callback, 10)
         self.initial_x = None
         self.current_x = None
+        self.target_distance = target_distance
         self.target_reached = False
 
     def odom_callback(self, msg):
@@ -21,7 +22,7 @@ class MoveToXGoal(Node):
 
         self.current_x = msg.pose.pose.position.x
 
-        if self.current_x - self.initial_x >= 1.0 and not self.target_reached:
+        if self.current_x - self.initial_x >= self.target_distance and not self.target_reached:
             self.target_reached = True
             self.get_logger().info(f"Target reached at X: {self.current_x}")
             self.stop_robot()
@@ -41,7 +42,13 @@ class MoveToXGoal(Node):
 
 def main():
     rclpy.init()
-    node = MoveToXGoal()
+    try:
+        target_distance = float(input("Enter the target distance (in meters): "))
+    except ValueError:
+        print("Invalid input. Please enter a numeric value.")
+        return
+
+    node = MoveToXGoal(target_distance)
     rate = node.create_rate(10)  # 10 Hz loop
 
     while rclpy.ok() and not node.target_reached:
