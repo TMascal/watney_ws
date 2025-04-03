@@ -57,6 +57,7 @@ class ArUcoTracker(Node):
                 cv2.drawFrameAxes(frame, self.K, self.dist_coeffs, rvec[0], tvec[0], 0.03)
 
                 curr_transformation_matrix = self.get_transformation_matrix(rvec[0], tvec[0])
+                self.THISONE = curr_transformation_matrix
                 curr_time = time.time()
                 dt = curr_time - self.prev_time
                 velocity = self.compute_velocity(self.prev_transformation_matrix, curr_transformation_matrix, dt)
@@ -79,8 +80,14 @@ class ArUcoTracker(Node):
 
                 # Create and publish Twist message
                 twist_msg = Twist()
-                twist_msg.linear.x = control_signal_x
-                twist_msg.angular.z = angular_z
+                # twist_msg.linear.x = control_signal_x
+                # twist_msg.angular.z = angular_z
+                # twist_msg.linear.x = float(self.THISONE[0])
+                # twist_msg.linear.y = float(self.THISONE[1])
+                # twist_msg.linear.z = float(self.THISONE[2])
+                print(self.THISONE[0])
+                print(self.THISONE[1])
+                print(self.THISONE[2])
                 self.publisher.publish(twist_msg)
 
                 self.get_logger().info(f"Published: X={control_signal_x:.2f} m/s, Z={angular_z:.2f} rad/s")

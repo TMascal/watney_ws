@@ -78,6 +78,7 @@ install(PROGRAMS
         scripts/image_top_level.py
         scripts/clarity_service.py
         scripts/dom.py
+        scripts/aruco_tracking.py
         DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
