@@ -14,6 +14,7 @@ class MoveToXGoal(Node):
         self.current_x = None
         self.target_distance = target_distance
         self.target_reached = False
+        self.measured_error = None  # To store the error after the run
 
     def odom_callback(self, msg):
         if self.initial_x is None:
@@ -24,6 +25,7 @@ class MoveToXGoal(Node):
 
         if self.current_x - self.initial_x >= self.target_distance and not self.target_reached:
             self.target_reached = True
+            self.measured_error = self.current_x - self.initial_x - self.target_distance
             self.get_logger().info(f"Target reached at X: {self.current_x}")
             self.stop_robot()
 
@@ -42,20 +44,34 @@ class MoveToXGoal(Node):
 
 def main():
     rclpy.init()
-    try:
-        target_distance = float(input("Enter the target distance (in meters): "))
-    except ValueError:
-        print("Invalid input. Please enter a numeric value.")
-        return
 
-    node = MoveToXGoal(target_distance)
-    rate = node.create_rate(10)  # 10 Hz loop
+    while True:
+        try:
+            target_distance = float(input("Enter the target distance (in meters): "))
+        except ValueError:
+            print("Invalid input. Please enter a numeric value.")
+            continue
 
-    while rclpy.ok() and not node.target_reached:
-        node.send_velocity()
-        rclpy.spin_once(node, timeout_sec=0.1)  # Process callbacks
+        node = MoveToXGoal(target_distance)
+        rate = node.create_rate(10)  # 10 Hz loop
 
-    node.destroy_node()
+        while rclpy.ok() and not node.target_reached:
+            node.send_velocity()
+            rclpy.spin_once(node, timeout_sec=0.1)  # Process callbacks
+
+        # Print the measured error after the run
+        if node.measured_error is not None:
+            print(f"Measured error: {node.measured_error:.4f} meters")
+
+        node.destroy_node()
+
+        # Ask the user if they want to run the test again
+        repeat = input("Do you want to run the test again? (yes/no): ").strip().lower()
+        if repeat != 'yes':
+            print("Exiting the program.")
+            break
+
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
