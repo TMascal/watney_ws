@@ -6,6 +6,7 @@
 import rclpy
 from cv_bridge import CvBridge
 from rclpy.node import Node
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
 from sensor_msgs.msg import Image
 
 import cv2
@@ -22,8 +23,12 @@ class VisionSystem(Node):
     def __init__(self):
         super().__init__('vision_controller')
 
+        # define callback groups
+        group1 = MutuallyExclusiveCallbackGroup()
+        group2 = MutuallyExclusiveCallbackGroup()
+
         # Define ths node as a Servie
-        self.service_ = self.create_service(VisionSystemCall, 'vision_controller', self.process_video)
+        self.service_ = self.create_service(VisionSystemCall, 'vision_controller', self.process_video, callback_group=group1)
 
         # Subscription to the raw camera data
         self.video_subscription = self.create_subscription(Image, 'image_raw', self.video_callback, 10)
@@ -31,7 +36,7 @@ class VisionSystem(Node):
         self.track = 0
 
         # Service Node for Clarity
-        self.clarity_service = self.create_client(CalcClarity, '/analysis/calc_clarity')
+        self.clarity_service = self.create_client(CalcClarity, '/analysis/calc_clarity', callback_group=group2)
         while not self.clarity_service.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Service not available, waiting...')
 
@@ -157,7 +162,10 @@ def main(args=None):
     node = VisionSystem()
     rclpy.spin_once(node)
     # node.process_video()
-    rclpy.spin(node)
+    executor = rclpy.executors.MultiThreadedExecutor()
+    executor.add_node(node)
+    executor.spin()  # instead of rclpy.spin(node)
+    # rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
 
