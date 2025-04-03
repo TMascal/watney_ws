@@ -182,17 +182,18 @@ class SerialNode(Node):
 
         #Physical Constants
         width = 0.172
-        wheel_radius = .08
+        wheel_radius = 0.039625
         #Sensitivity Scale Factors (see ICM20948 data sheet)
         accel_ssf = 8192
         gyro_ssf = 32.8
         magn_ssf = 0.15
-
+        #Encoder pulses per revolution:
+        ppr = 1092.0
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
-        odl = float(json_data.get('odl', 0.0))/100 # Convert to meters
-        odr = float(json_data.get('odr', 0.0))/100 # Convert to meters
+        odl = float(json_data.get('odl', 0.0))/ppr # Convert to meters
+        odr = float(json_data.get('odr', 0.0))/ppr # Convert to meters
 
         delta_odl = odl - self.previous_odl
         delta_odr = odr - self.previous_odr
