@@ -65,8 +65,11 @@ def main():
             node.send_velocity()
             rclpy.spin_once(node, timeout_sec=0.1)
             elapsed = time.time() - start_time
+            if node.initial_x is not None and node.current_x is not None:
+                elapsed_distance = node.current_x - node.initial_x
+                node.get_logger().info(f"Elapsed Distance: {elapsed_distance:.4f} meters")
             if elapsed > expected_time:
-                node.get_logger().info("Test failed: runtime exceeded safety limit.")
+                node.get_logger().warning("Test failed: runtime exceeded safety limit.")
                 node.stop_robot()
                 break
 
