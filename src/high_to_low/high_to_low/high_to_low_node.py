@@ -206,9 +206,9 @@ class SerialNode(Node):
         angular_velocity_z = (rVel - lVel) / width
 
         delta_theta = angular_velocity_z * delta_time # I don't like this
-        self.theta = (self.theta + delta_theta) % (2 * math.pi)
-        if self.theta > math.pi:
-            self.theta -= 2 * math.pi
+        self.theta = (self.theta + delta_theta) # % (2 * math.pi)
+        # if self.theta > math.pi:
+        #     self.theta -= 2 * math.pi
 
         delta_x = wheel_radius * ((delta_odr + delta_odl) / 2)
         delta_y = delta_x * math.sin(self.theta + (delta_odr + delta_odl) / width)
