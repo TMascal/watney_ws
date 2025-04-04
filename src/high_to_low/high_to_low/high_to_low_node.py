@@ -272,17 +272,16 @@ class SerialNode(Node):
         linear_velocity_x = (rVel + lVel) / 2.0
         angular_velocity_z = (rVel - lVel) / width
 
-        scale_factor = 4.0
-        delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
-        self.delta_d = delta_d / scale_factor
+        self.delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
 
         delta_theta = ((odr_m - self.previous_odr_m) - (odl_m - self.previous_odl_m)) / width
 
         self.previous_odl_m = odl_m
         self.previous_odr_m = odr_m
 
-        self.x_position += self.delta_d * math.cos(self.theta + delta_theta / 2.0)
-        self.y_position += self.delta_d * math.sin(self.theta + delta_theta / 2.0)
+        scale_factor = 4.0
+        self.x_position += self.delta_d * scale_factor * math.cos(self.theta + delta_theta / 2.0)
+        self.y_position += self.delta_d * scale_factor * math.sin(self.theta + delta_theta / 2.0)
         self.theta += delta_theta
 
         odom_msg = Odometry()
