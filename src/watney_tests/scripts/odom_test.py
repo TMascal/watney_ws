@@ -75,6 +75,7 @@ def main():
 
         # Print the measured error after the run if target reached
         if node.target_reached and node.measured_error is not None:
+            print("Test Successful!")
             print(f"Measured error: {node.measured_error:.4f} meters")
         elif not node.target_reached:
             pass
