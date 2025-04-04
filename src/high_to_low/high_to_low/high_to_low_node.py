@@ -272,7 +272,9 @@ class SerialNode(Node):
         linear_velocity_x = (rVel + lVel) / 2.0
         angular_velocity_z = (rVel - lVel) / width
 
-        self.delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
+        scale_factor = 4.0
+        delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
+        self.delta_d = delta_d / scale_factor
 
         delta_theta = ((odr_m - self.previous_odr_m) - (odl_m - self.previous_odl_m)) / width
 
