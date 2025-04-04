@@ -74,9 +74,25 @@ def main():
                 break
 
         # Print the measured error after the run if target reached
-        if node.target_reached and node.measured_error is not None:
+        if node.target_reached:
+            extra_samples = []
+            sampling_duration = 1.0  # seconds
+            sample_interval = 0.1    # seconds (10Hz)
+            start_extra = time.time()
+            while time.time() - start_extra < sampling_duration:
+                rclpy.spin_once(node, timeout_sec=sample_interval)
+                if node.current_x is not None:
+                    extra_samples.append(node.current_x)
+                time.sleep(sample_interval)
+            
+            if extra_samples:
+                final_x = extra_samples[-1]
+                overall_error = final_x - node.initial_x - node.target_distance
+            else:
+                overall_error = node.measured_error
+            
             print("Test Successful!")
-            print(f"Measured error: {node.measured_error:.4f} meters")
+            print(f"Measured error after extra sampling: {overall_error:.4f} meters")
         elif not node.target_reached:
             pass
 
