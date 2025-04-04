@@ -279,7 +279,7 @@ class SerialNode(Node):
         self.previous_odl_m = odl_m
         self.previous_odr_m = odr_m
 
-        scale_factor = 4.0
+        scale_factor = 2100.0 / 660.0
         self.x_position += self.delta_d * scale_factor * math.cos(self.theta + delta_theta / 2.0)
         self.y_position += self.delta_d * scale_factor * math.sin(self.theta + delta_theta / 2.0)
         self.theta += delta_theta
