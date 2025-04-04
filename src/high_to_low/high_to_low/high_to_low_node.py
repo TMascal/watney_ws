@@ -45,10 +45,11 @@ class SerialNode(Node):
         self.serial_recv_thread.start()
 
         self.last_time = self.get_clock().now()
-        self.previous_odl = 0.0
-        self.previous_odr = 0.0
+        self.previous_odl_m = 0.0
+        self.previous_odr_m = 0.0
         self.x_position = 0.0
         self.y_position = 0.0
+        self.delta_d = 0.0
         self.theta = 0.0
 
         self.last_cmd_vel_time = None
@@ -177,7 +178,6 @@ class SerialNode(Node):
 
     def handle_1001(self, json_data, use_mag):
         current_time = self.get_clock().now()
-        delta_time = (current_time - self.last_time).nanoseconds / 1e9  # Convert to seconds
         self.last_time = current_time
 
         #Physical Constants
@@ -187,30 +187,31 @@ class SerialNode(Node):
         accel_ssf = 8192
         gyro_ssf = 32.8
         magn_ssf = 0.15
-        #Encoder pulses per revolution:
-        ppr = 1650
 
         lVel = float(json_data.get('L', 0.0))
         rVel = float(json_data.get('R', 0.0))
-        odl = float(json_data.get('odl', 0.0))
-        odr = float(json_data.get('odr', 0.0))
+        odl_cm = float(json_data.get('odl', 0.0))
+        odr_cm = float(json_data.get('odr', 0.0))
 
-        odl_m = math.pi * wheel_diameter * (odl / ppr)
-        odr_m = math.pi * wheel_diameter * (odr / ppr)
+        odl_m = odl_cm / 100.0
+        odr_m = odr_cm / 100.0
 
-        left_wheel_position = 2.0 * math.pi * (odl / ppr)
-        right_wheel_position = 2.0 * math.pi * (odr / ppr)
+        left_wheel_position = 2.0 * odl_m / wheel_diameter
+        right_wheel_position = 2.0 * odr_m / wheel_diameter
 
         linear_velocity_x = (rVel + lVel) / 2.0
         angular_velocity_z = (rVel - lVel) / width
 
-        delta_theta = angular_velocity_z * delta_time # I don't like this
-        self.theta = (self.theta + delta_theta) # % (2 * math.pi)
-        # if self.theta > math.pi:
-        #     self.theta -= 2 * math.pi
+        self.delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
 
-        self.x_position = (odl_m + odr_m) / 2.0
-        self.y_position = self.x_position * math.sin(self.theta + (odr_m + odl_m) / width)
+        delta_theta = ((odr_m - self.previous_odr_m) - (odl_m - self.previous_odl_m)) / width
+
+        self.previous_odl_m = odl_m
+        self.previous_odr_m = odr_m
+
+        self.x_position += self.delta_d * math.cos(self.theta + delta_theta / 2.0)
+        self.y_position += self.delta_d * math.sin(self.theta + delta_theta / 2.0)
+        self.theta += delta_theta
 
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
