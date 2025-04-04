@@ -75,6 +75,9 @@ def main():
 
         # Print the measured error after the run if target reached
         if node.target_reached:
+            # The error measured at the moment the target was reached
+            initial_error = node.measured_error if node.measured_error is not None else 0.0
+        
             extra_samples = []
             sampling_duration = 1.0  # seconds
             sample_interval = 0.1    # seconds (10Hz)
@@ -89,10 +92,15 @@ def main():
                 final_x = extra_samples[-1]
                 overall_error = final_x - node.initial_x - node.target_distance
             else:
-                overall_error = node.measured_error
+                overall_error = initial_error
             
+            # Compute the drift (post stopping error) as the difference between the overall error and the initial error
+            drift_error = overall_error - initial_error
+        
             print("Test Successful!")
-            print(f"Measured error after extra sampling: {overall_error:.4f} meters")
+            print(f"Initial measuring error: {initial_error:.4f} meters")
+            print(f"Post stopping (drift) error: {drift_error:.4f} meters")
+            print(f"Total error: {overall_error:.4f} meters")
         elif not node.target_reached:
             pass
 
