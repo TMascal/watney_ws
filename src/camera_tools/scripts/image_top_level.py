@@ -12,6 +12,7 @@ from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge
 import numpy as np
+from threading import Event
 
 from camera_tools_interfaces.srv import CalcClarity, VisionSystemCall
 
@@ -24,8 +25,8 @@ class VisionSystem(Node):
         super().__init__('vision_controller')
 
         # define callback groups
-        group1 = MutuallyExclusiveCallbackGroup()
-        group2 = MutuallyExclusiveCallbackGroup()
+        group1 = ReentrantCallbackGroup() # MutuallyExclusiveCallbackGroup()
+        group2 = ReentrantCallbackGroup() # MutuallyExclusiveCallbackGroup()
 
         # Define ths node as a Servie
         self.service_ = self.create_service(VisionSystemCall, 'vision_controller', self.process_video, callback_group=group1)
@@ -131,6 +132,8 @@ class VisionSystem(Node):
         # Return file path
         response.file_path = save_path
 
+        return response
+
     def RequestClarity(self, image):
         data = self.bridge.cv2_to_imgmsg(image, 'bgr8')  # Convert OpenCV image to ROS image message
         request = CalcClarity.Request()
@@ -139,9 +142,14 @@ class VisionSystem(Node):
         self.get_logger().info('Calling clarity service asynchronously...')
         future = self.clarity_service.call_async(request)  # Make asynchronous call
 
-        # Wait for the response using spin_until_future_complete
-        rclpy.spin_until_future_complete(self, future)
+        # Use a threading Event to wait for the future without blocking the executor's callbacks
+        done_evt = Event()
+        future.add_done_callback(lambda fut: done_evt.set())
 
+        # Wait for up to 5 seconds for the future to complete
+        if not done_evt.wait(timeout=5.0):
+            self.get_logger().error("Timeout waiting for clarity service response")
+            return None
 
         if future.done():
             try:
