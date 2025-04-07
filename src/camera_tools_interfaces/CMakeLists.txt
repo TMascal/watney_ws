@@ -15,6 +15,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
         "srv/TakePicture.srv"
         "srv/CalcClarity.srv"
         "srv/VisionSystemCall.srv"
+        "srv/HDRService.srv"
         DEPENDENCIES sensor_msgs
 )
 

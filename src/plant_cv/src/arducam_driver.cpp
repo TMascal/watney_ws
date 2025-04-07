@@ -29,7 +29,7 @@ int main(int argc, char * argv[]) {
     cv::Mat frame;
 
     // Set the rate (in Hz) for while loop execution
-    rclcpp::WallRate rate(10); // 30 Hz loop speed (adjust as needed)
+    rclcpp::WallRate rate(60); // 30 Hz loop speed (adjust as needed)
     while (rclcpp::ok()) {
         cap >> frame;
         if (frame.empty()) {

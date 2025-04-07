@@ -168,11 +168,9 @@ def main(args=None):
     rclpy.init(args=args)
     node = VisionSystem()
     rclpy.spin_once(node)
-    # node.process_video()
     executor = rclpy.executors.MultiThreadedExecutor()
     executor.add_node(node)
-    executor.spin()  # instead of rclpy.spin(node)
-    # rclpy.spin(node)
+    executor.spin()
     node.destroy_node()
     rclpy.shutdown()
 

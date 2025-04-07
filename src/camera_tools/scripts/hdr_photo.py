@@ -10,7 +10,7 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from sensor_msgs.msg import Image
 from threading import Event
 
-from camera_tools_interfaces.srv import ChangeExposure, TakePicture
+from camera_tools_interfaces.srv import ChangeExposure, HDRService
 
 class MyServiceClientNode(Node):
     def __init__(self):
@@ -38,7 +38,7 @@ class MyServiceClientNode(Node):
         self.frame = None
 
         # Create Service Server
-        self.service_ = self.create_service(TakePicture, 'hdr_photo', self.process_request, callback_group=group3)
+        self.service_ = self.create_service(HDRService, 'hdr_photo', self.process_request, callback_group=group3)
 
         # Make sure the services are available
         while not self.exposure_srv.wait_for_service(timeout_sec=1.0):
@@ -99,7 +99,7 @@ class MyServiceClientNode(Node):
 
         return response
 
-    def take_3_pictures(self, exposure_values=(0, 0, 0), frames_to_wait=5):
+    def take_3_pictures(self, exposure_values=(0, 0, 0), frames_to_wait=3):
 
         images = []
         for exposure in exposure_values:
