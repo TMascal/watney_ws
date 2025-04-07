@@ -18,7 +18,7 @@ void changeExposure(const std::shared_ptr<camera_tools_interfaces::srv::ChangeEx
     response->success = false;
 
     // Video Device
-    int video_device = 2;
+    int video_device = 0;
 
     // Define Command Variable to Set Exposure Mode to Manual
     if (new_exposure_value == 0) {
@@ -64,8 +64,6 @@ void changeExposure(const std::shared_ptr<camera_tools_interfaces::srv::ChangeEx
         RCLCPP_ERROR(rclcpp::get_logger("change_exposure"), "Command failed with return code: %d", returnCode);
     }
  }
-
-
     // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Incoming request\na: %ld" " b: %ld", request->a, request->b);
     // RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "sending back response: [%ld]", (long int)response->sum);
 }

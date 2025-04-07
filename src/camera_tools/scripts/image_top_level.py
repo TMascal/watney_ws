@@ -34,7 +34,6 @@ class VisionSystem(Node):
         # Subscription to the raw camera data
         self.video_subscription = self.create_subscription(Image, 'image_raw', self.video_callback, 10)
         self.frame = None
-        self.track = 0
 
         # Service Node for Clarity
         self.clarity_service = self.create_client(CalcClarity, '/analysis/calc_clarity', callback_group=group2)

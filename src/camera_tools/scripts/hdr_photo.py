@@ -6,6 +6,9 @@ from cv_bridge import CvBridge
 import rclpy
 from rclpy.node import Node
 import numpy as np
+from rclpy.callback_groups import ReentrantCallbackGroup
+from sensor_msgs.msg import Image
+from threading import Event
 
 from camera_tools_interfaces.srv import ChangeExposure, TakePicture
 
@@ -13,85 +16,119 @@ class MyServiceClientNode(Node):
     def __init__(self):
         super().__init__('hdr_photo_node')
 
+        # define callback groups
+        group1 = ReentrantCallbackGroup()
+        group2 = ReentrantCallbackGroup()
+        group3 = ReentrantCallbackGroup()
+
         # Create CV2 Bridge Object
         self.bridge = CvBridge()
 
+        # Create a threading event to signal when a new frame is available.
+        self.frame_updated_event = Event()
+        # Counter to track the number of frames received.
+        self.frame_counter = 0
+
         # Create the service clients
-        self.client_1 = self.create_client(ChangeExposure, '/change_exposure')
-        self.client_2 = self.create_client(TakePicture, '/take_picture')
+        self.exposure_srv = self.create_client(ChangeExposure, 'change_exposure', callback_group=group1)
+
+        # Link Camera Topic
+        # Subscription to the raw camera data
+        self.video_subscription = self.create_subscription(Image, 'image_raw', self.video_callback, 10, callback_group=group2)
+        self.frame = None
+
+        # Create Service Server
+        self.service_ = self.create_service(TakePicture, 'hdr_photo', self.process_request, callback_group=group3)
 
         # Make sure the services are available
-        while not self.client_1.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('<service_1_name> is not available, waiting...')
-        while not self.client_2.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('<service_2_name> is not available, waiting...')
-
+        while not self.exposure_srv.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('/change_exposure is not available, waiting...')
         self.get_logger().info('All services available, proceeding with execution')
 
-    def call_service_1(self, request):
-        """
-        Call the first service and handle its response.
-        """
-        future = self.client_1.call_async(request)
-        rclpy.spin_until_future_complete(self, future)
+    def video_callback(self, msg):
+        self.frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
+        # Increment the counter.
+        self.frame_counter += 1
+        # Signal that a new frame has been received
+        self.frame_updated_event.set()
+        return
 
-        if future.done():
-            try:
-                response = future.result()
-            except Exception as e:
-                self.get_logger().error(f'Error calling service: {e}')
+    def process_request(self, request, response):
+        bridge = CvBridge()
+
+        # Create a 512x512 white image with 3 channels (BGR)
+        white_image = np.full((5, 5, 3), 255, dtype=np.uint8)
+
+        self.get_logger().info(f"Created image of type: {type(white_image)} with shape: {white_image.shape}")
+
+        # Convert the OpenCV image (NumPy array) to a ROS Image message.
+        ros_image_msg = bridge.cv2_to_imgmsg(white_image, encoding="bgr8")
+
+        # Package the ROS Image message into the response.
+        response.image = ros_image_msg
+
+        self.take_3_pictures([100, 1000, 2000])
+
+        return response
+
+    def set_camera_exposure(self, exposure_value):
+        """
+        Call the service to change the exposure of the camera
+        """
+        request = ChangeExposure.Request()
+        request.exposure_value = exposure_value
+
+        future = self.exposure_srv.call_async(request)
+
+        # Create an Event to wait for the future to complete without blocking the executor.
+        done_evt = Event()
+        future.add_done_callback(lambda fut: done_evt.set())
+
+        # Wait for up to 5 seconds for the future to complete.
+        if not done_evt.wait(timeout=5.0):
+            self.get_logger().error("Timeout waiting for service response")
+            return None
+
+        try:
+            response = future.result()
+        except Exception as e:
+            self.get_logger().error(f'Error calling service: {e}')
+            return None
 
         self.get_logger().info(f'Received response from ChangeExposure: {response.success}')
 
         return response
 
+    def take_3_pictures(self, exposure_values=(0, 0, 0), frames_to_wait=5):
 
-    def call_service_2(self, request):
-        """
-        Call the second service and handle its response.
-        """
-        future = self.client_2.call_async(request)
-        rclpy.spin_until_future_complete(self, future)
+        images = []
+        for exposure in exposure_values:
+            # Record the current frame counter.
+            baseline = self.frame_counter
 
-        if future.done():
-            try:
-                response = future.result()
-            except Exception as e:
-                self.get_logger().error(f'Error calling service: {e}')
+            # Clear the event so we wait for new frame events.
+            self.frame_updated_event.clear()
 
-        self.get_logger().info('Received response from TakePicture:')
+            # Set the exposure.
+            self.set_camera_exposure(exposure)
 
-        return response
+            # Wait until 'frames_to_wait' new frames have been received.
+            target_count = baseline + frames_to_wait
+            while self.frame_counter < target_count:
+                # Wait with a timeout to prevent infinite blocking.
+                self.frame_updated_event.wait(timeout=1.0)
+                self.frame_updated_event.clear()
 
+            self.get_logger().info(f"Received {frames_to_wait} new frame events after setting exposure {exposure}")
+            # Append the current frame after the required number of updates.
+            images.append(self.frame)
 
-    def take_picture(self, exposure_value=0):
-        request = ChangeExposure.Request()
-        request.exposure_value = exposure_value
-        response = self.call_service_1(request)
-
-        pic_request = TakePicture.Request()
-        pic_request.request = True
-        pic_response = self.call_service_2(pic_request)
-
-        # Convert to np.matrix for use with openCV
-        image = self.bridge.imgmsg_to_cv2(pic_response.image)
-
-        return image
-
-    def take_3_pictures(self, exposure_values=None):
-        if exposure_values is None:
-            exposure_values = [0, 0, 0]
-
-        img1 = self.take_picture(exposure_values[0])
-        img2 = self.take_picture(exposure_values[1])
-        img3 = self.take_picture(exposure_values[2])
-
-        images = [img1, img2, img3]
-
+        # Optionally save the images.
         for i, img in enumerate(images, start=1):
-            filepath = f'/home/mark/watney_ws/pictures/image{i}.jpg'
-            cv2.imwrite(filepath, img)
-        self.get_logger().info(f'Saved images to /home/mark/watney_ws/pictures/')
+            if img is not None:
+                filepath = f'/home/mark/watney_ws/pictures/image{i}.jpg'
+                cv2.imwrite(filepath, img)
+        self.get_logger().info('Saved images to /home/mark/watney_ws/pictures/')
 
         return images
 
@@ -144,14 +181,23 @@ class MyServiceClientNode(Node):
             return None
 
 def main():
-    rclpy.init()
     try:
+        rclpy.init()
         node = MyServiceClientNode()
-        response = node.process_hdr()
-        cv2.imwrite(f'/home/mark/watney_ws/pictures/image.jpg', response)
-        node.get_logger().info(f'//home//mark//watney_ws//pictures//Save.jpg:')
+        rclpy.spin_once(node)
+        executor = rclpy.executors.MultiThreadedExecutor()
+        executor.add_node(node)
+        executor.spin()
 
-        rclpy.spin(node)
+        # node.take_3_pictures([100, 1000, 2000])
+        # response = node.process_hdr()
+        # cv2.imwrite(f'/home/mark/watney_ws/pictures/image.jpg', response)
+        # node.get_logger().info(f'//home//mark//watney_ws//pictures//Save.jpg:')
+
+
+        node.destroy_node()
+        rclpy.shutdown()
+
     except KeyboardInterrupt:
         pass
     finally:
