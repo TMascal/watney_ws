@@ -56,18 +56,20 @@ class MyServiceClientNode(Node):
     def process_request(self, request, response):
         bridge = CvBridge()
 
-        # Create a 512x512 white image with 3 channels (BGR)
-        white_image = np.full((5, 5, 3), 255, dtype=np.uint8)
+        # Process HDR Service
+        hdr_image, source_images = self.process_hdr()
 
-        self.get_logger().info(f"Created image of type: {type(white_image)} with shape: {white_image.shape}")
-
-        # Convert the OpenCV image (NumPy array) to a ROS Image message.
-        ros_image_msg = bridge.cv2_to_imgmsg(white_image, encoding="bgr8")
+        # Convert Returns to Return Message
+        ros_hdr_image_msg = bridge.cv2_to_imgmsg(hdr_image, encoding="bgr8")
+        ros_low_image_msg = bridge.cv2_to_imgmsg(source_images[0], encoding="bgr8")
+        ros_mid_image_msg = bridge.cv2_to_imgmsg(source_images[1], encoding="bgr8")
+        ros_high_image_msg = bridge.cv2_to_imgmsg(source_images[2], encoding="bgr8")
 
         # Package the ROS Image message into the response.
-        response.image = ros_image_msg
-
-        self.take_3_pictures([100, 1000, 2000])
+        response.image_hdr = ros_hdr_image_msg
+        response.image_low = ros_low_image_msg
+        response.image_mid = ros_mid_image_msg
+        response.image_high = ros_high_image_msg
 
         return response
 
@@ -175,7 +177,7 @@ class MyServiceClientNode(Node):
             ldr_image = cv2.normalize(ldr_image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC3)
 
             self.get_logger().info("Tone mapping successfully applied.")
-            return ldr_image
+            return ldr_image, images
         except Exception as e:
             self.get_logger().error(f"Error during tone mapping: {e}")
             return None
