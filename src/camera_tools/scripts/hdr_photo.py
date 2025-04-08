@@ -57,7 +57,7 @@ class MyServiceClientNode(Node):
         bridge = CvBridge()
 
         # Process HDR Service
-        hdr_image, source_images = self.process_hdr()
+        hdr_image, source_images, exposure_values = self.process_hdr()
 
         # Convert Returns to Return Message
         ros_hdr_image_msg = bridge.cv2_to_imgmsg(hdr_image, encoding="bgr8")
@@ -70,6 +70,8 @@ class MyServiceClientNode(Node):
         response.image_low = ros_low_image_msg
         response.image_mid = ros_mid_image_msg
         response.image_high = ros_high_image_msg
+
+        # response.exposure_value
 
         return response
 
@@ -125,12 +127,7 @@ class MyServiceClientNode(Node):
             # Append the current frame after the required number of updates.
             images.append(self.frame)
 
-        # Optionally save the images.
-        for i, img in enumerate(images, start=1):
-            if img is not None:
-                filepath = f'/home/mark/watney_ws/pictures/image{i}.jpg'
-                cv2.imwrite(filepath, img)
-        self.get_logger().info('Saved images to /home/mark/watney_ws/pictures/')
+        self.set_camera_exposure(0)
 
         return images
 
@@ -177,7 +174,7 @@ class MyServiceClientNode(Node):
             ldr_image = cv2.normalize(ldr_image, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8UC3)
 
             self.get_logger().info("Tone mapping successfully applied.")
-            return ldr_image, images
+            return ldr_image, images, exposure_values
         except Exception as e:
             self.get_logger().error(f"Error during tone mapping: {e}")
             return None
