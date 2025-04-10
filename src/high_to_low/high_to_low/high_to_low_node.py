@@ -6,6 +6,7 @@ from sensor_msgs.msg import MagneticField
 from sensor_msgs.msg import JointState
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
+import logging
 import serial
 import threading
 import json
@@ -27,6 +28,7 @@ class SerialNode(Node):
         self.gyro_offsets = (0.0, 0.0, 0.0)
 
         self.read_publisher = self.create_publisher(String, '/h2l_node/read', 10)
+        self.chatter_publisher = self.create_publisher(String, '/h2l_node/chatter', 10)
         self.write_subscription = self.create_subscription(String, '/h2l_node/write', self.write_serial, 10)
         self.imu_publisher = self.create_publisher(Imu, '/imu/data_raw', 10)
         self.mag_publisher = self.create_publisher(MagneticField, '/imu/mag', 10)
@@ -45,21 +47,19 @@ class SerialNode(Node):
         self.serial_recv_thread.start()
 
         self.last_time = self.get_clock().now()
-        self.previous_odl = 0.0
-        self.previous_odr = 0.0
+        self.previous_odl_m = 0.0
+        self.previous_odr_m = 0.0
         self.x_position = 0.0
         self.y_position = 0.0
+        self.delta_d = 0.0
         self.theta = 0.0
 
         self.last_cmd_vel_time = None
 
         self.set_feedback_rate(500.0)
-        # self.get_logger().info(f"Feedback Frequency Param disabled for testing purposes.")
         self.hl_calibrate_imu()
         self.set_feedback_rate(feedback_freq)
         self.get_logger().info(f"Feedback frequency set to {feedback_freq} Hz")
-        # Cancelling event since no calibration
-        # self.calibration_event.set()
         self.velocity_timeout_timer = self.create_timer(0.1, self.check_velocity_timeout)
         self.get_logger().info(f"Command Executed. Defualt Values Initialized. There you are. Deploying!")
 
@@ -144,12 +144,20 @@ class SerialNode(Node):
                 handlers = {
                     1001: lambda data: self.handle_1001(data, self.use_mag),
                 }
-                handler = handlers.get(t_value, self.handle_default)
+                handler = handlers.get(t_value, self.handle_default(json_data))
                 handler(json_data)
             else:
-                self.get_logger().warning("No 'T' value found in JSON")
+                self.get_logger().debug("Non-JSON or garbled message received")
+                chatter_msg = String()
+                chatter_msg.data = data
+                self.chatter_publisher.publish(chatter_msg)
+
         except json.JSONDecodeError as e:
             self.get_logger().error(f"Failed to decode JSON: {e}")
+            self.get_logger().debug("Non-JSON or garbled message received")
+            chatter_msg = String()
+            chatter_msg.data = data
+            self.chatter_publisher.publish(chatter_msg)
 
     def handle_cmd_vel(self, msg):
         self.last_cmd_vel_time = self.get_clock().now()
@@ -175,46 +183,20 @@ class SerialNode(Node):
             self.handle_cmd_vel(Twist())  # Send zero velocity
             self.last_cmd_vel_time = None
 
+    def handle_default(self, json_data):
+        self.get_logger().debug(f"Received message with value: {json_data['T']}")
+
+
     def handle_1001(self, json_data, use_mag):
         current_time = self.get_clock().now()
-        delta_time = (current_time - self.last_time).nanoseconds / 1e9  # Convert to seconds
         self.last_time = current_time
 
-        #Physical Constants
-        width = 0.172
-        wheel_radius = 0.039625
+        # IMU Data
+
         #Sensitivity Scale Factors (see ICM20948 data sheet)
         accel_ssf = 8192
         gyro_ssf = 32.8
         magn_ssf = 0.15
-        #Encoder pulses per revolution:
-        ppr = 1092.0
-
-        lVel = float(json_data.get('L', 0.0))
-        rVel = float(json_data.get('R', 0.0))
-        odl = float(json_data.get('odl', 0.0))/ppr * 2 * math.pi # Convert to Rad
-        odr = float(json_data.get('odr', 0.0))/ppr * 2 * math.pi # Convert to Rad
-
-        delta_odl = odl - self.previous_odl
-        delta_odr = odr - self.previous_odr
-        left_wheel_position = odl
-        right_wheel_position = odr
-        self.previous_odl = odl
-        self.previous_odr = odr
-
-        linear_velocity_x = (rVel + lVel) / 2
-        angular_velocity_z = (rVel - lVel) / width
-
-        delta_theta = angular_velocity_z * delta_time # I don't like this
-        self.theta = (self.theta + delta_theta) # % (2 * math.pi)
-        # if self.theta > math.pi:
-        #     self.theta -= 2 * math.pi
-
-        delta_x = wheel_radius * ((delta_odr + delta_odl) / 2)
-        delta_y = delta_x * math.sin(self.theta + (delta_odr + delta_odl) / width)
-
-        self.x_position += delta_x
-        self.y_position += delta_y
 
         imu_msg = Imu()
         imu_msg.header.stamp = current_time.to_msg()
@@ -266,12 +248,47 @@ class SerialNode(Node):
 
         self.mag_publisher.publish(mag_msg)
 
+        # Odometry and Position
+
+        #Physical Constants
+        width = 0.172
+        wheel_diameter = 0.08
+
+        lVel = float(json_data.get('L', 0.0))
+        rVel = float(json_data.get('R', 0.0))
+        odl_cm = float(json_data.get('odl', 0.0))
+        odr_cm = float(json_data.get('odr', 0.0))
+
+        odl_m = odl_cm / 100.0
+        odr_m = odr_cm / 100.0
+
+        # Joint States
+        left_wheel_position = 2.0 * odl_m / wheel_diameter
+        right_wheel_position = 2.0 * odr_m / wheel_diameter
+        left_wheel_velocity = 2.0 * lVel / wheel_diameter
+        right_wheel_velocity = 2.0 * rVel / wheel_diameter
+
+        # Odom
+        linear_velocity_x = (rVel + lVel) / 2.0
+        angular_velocity_z = (rVel - lVel) / width
+
+        self.delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
+
+        delta_theta = ((odr_m - self.previous_odr_m) - (odl_m - self.previous_odl_m)) / width
+
+        self.previous_odl_m = odl_m
+        self.previous_odr_m = odr_m
+
+        scale_factor = 3.5
+        self.x_position += self.delta_d * scale_factor * math.cos(self.theta + delta_theta / 2.0)
+        self.y_position += self.delta_d * scale_factor * math.sin(self.theta + delta_theta / 2.0)
+        self.theta += delta_theta
+
         odom_msg = Odometry()
         odom_msg.header.stamp = current_time.to_msg()
         odom_msg.header.frame_id = "odom"
         odom_msg.pose.pose.position.x = self.x_position
         odom_msg.pose.pose.position.y = self.y_position
-        odom_msg.pose.pose.position.z = 0.0
         odom_msg.pose.pose.orientation.z = math.sin(self.theta / 2)
         odom_msg.pose.pose.orientation.w = math.cos(self.theta / 2)
         odom_msg.twist.twist.linear.x = linear_velocity_x
@@ -292,34 +309,30 @@ class SerialNode(Node):
         left_upper_joint_msg.header.stamp = current_time.to_msg()
         left_upper_joint_msg.name = ["left_up_wheel_link_joint"]
         left_upper_joint_msg.position = [left_wheel_position]
-        left_upper_joint_msg.velocity = [lVel]
+        left_upper_joint_msg.velocity = [left_wheel_velocity]
 
         right_upper_joint_msg = JointState()
         right_upper_joint_msg.header.stamp = current_time.to_msg()
         right_upper_joint_msg.name = ["right_up_wheel_link_joint"]
         right_upper_joint_msg.position = [right_wheel_position]
-        right_upper_joint_msg.velocity = [rVel]
+        right_upper_joint_msg.velocity = [right_wheel_velocity]
 
         left_down_joint_msg = JointState()
         left_down_joint_msg.header.stamp = current_time.to_msg()
         left_down_joint_msg.name = ["left_down_wheel_link_joint"]
         left_down_joint_msg.position = [left_wheel_position]
-        left_down_joint_msg.velocity = [lVel]
+        left_down_joint_msg.velocity = [left_wheel_velocity]
 
         right_down_joint_msg = JointState()
         right_down_joint_msg.header.stamp = current_time.to_msg()
         right_down_joint_msg.name = ["right_down_wheel_link_joint"]
         right_down_joint_msg.position = [right_wheel_position]
-        right_down_joint_msg.velocity = [rVel]
+        right_down_joint_msg.velocity = [right_wheel_velocity]
 
         self.joint_publisher.publish(left_upper_joint_msg)
         self.joint_publisher.publish(right_upper_joint_msg)
         self.joint_publisher.publish(left_down_joint_msg)
         self.joint_publisher.publish(right_down_joint_msg)
-
-
-    def handle_default(self, json_data):
-        pass
 
     def write_serial(self, msg):
         self.ser.write(msg.data.encode() + b'\n')

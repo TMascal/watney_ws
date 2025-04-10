@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import time
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
@@ -15,6 +16,7 @@ class MoveToXGoal(Node):
         self.target_distance = target_distance
         self.target_reached = False
         self.measured_error = None  # To store the error after the run
+        self.max_vel = 0.1
 
     def odom_callback(self, msg):
         if self.initial_x is None:
@@ -29,12 +31,14 @@ class MoveToXGoal(Node):
             self.get_logger().info(f"Target reached at X: {self.current_x}")
             self.stop_robot()
 
-    def send_velocity(self, x_speed=0.2):
+    def send_velocity(self):
+        if self.initial_x is None:
+            self.get_logger().info("Waiting for odom message...")
+            return
         if not self.target_reached:
             twist = Twist()
-            twist.linear.x = x_speed
+            twist.linear.x = self.max_vel
             self.cmd_vel_pub.publish(twist)
-            self.get_logger().info("Sending velocity command...")
 
     def stop_robot(self):
         twist = Twist()
@@ -53,14 +57,52 @@ def main():
 
         node = MoveToXGoal(target_distance)
         rate = node.create_rate(10)  # 10 Hz loop
+        safety_factor = 1.5
+        expected_time = target_distance / node.max_vel * safety_factor
+        start_time = time.time()
 
         while rclpy.ok() and not node.target_reached:
             node.send_velocity()
-            rclpy.spin_once(node, timeout_sec=0.1)  # Process callbacks
+            rclpy.spin_once(node, timeout_sec=0.1)
+            elapsed = time.time() - start_time
+            if node.initial_x is not None and node.current_x is not None:
+                elapsed_distance = node.current_x - node.initial_x
+                node.get_logger().info(f"Elapsed Distance: {elapsed_distance:.4f} meters")
+            if elapsed > expected_time:
+                node.get_logger().warning("Test failed: runtime exceeded safety limit.")
+                node.stop_robot()
+                break
 
-        # Print the measured error after the run
-        if node.measured_error is not None:
-            print(f"Measured error: {node.measured_error:.4f} meters")
+        # Print the measured error after the run if target reached
+        if node.target_reached:
+            # The error measured at the moment the target was reached
+            initial_error = node.measured_error if node.measured_error is not None else 0.0
+        
+            extra_samples = []
+            sampling_duration = 1.0  # seconds
+            sample_interval = 0.1    # seconds (10Hz)
+            start_extra = time.time()
+            while time.time() - start_extra < sampling_duration:
+                rclpy.spin_once(node, timeout_sec=sample_interval)
+                if node.current_x is not None:
+                    extra_samples.append(node.current_x)
+                time.sleep(sample_interval)
+            
+            if extra_samples:
+                final_x = extra_samples[-1]
+                overall_error = final_x - node.initial_x - node.target_distance
+            else:
+                overall_error = initial_error
+            
+            # Compute the drift (post stopping error) as the difference between the overall error and the initial error
+            drift_error = overall_error - initial_error
+        
+            print("Test Successful!")
+            print(f"Initial measuring error: {initial_error:.4f} meters")
+            print(f"Post stopping (drift) error: {drift_error:.4f} meters")
+            print(f"Total error: {overall_error:.4f} meters")
+        elif not node.target_reached:
+            pass
 
         node.destroy_node()
 
