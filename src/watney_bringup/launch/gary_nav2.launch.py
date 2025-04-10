@@ -26,7 +26,7 @@ def generate_launch_description():
     ldlidar_slam_launch_file = os.path.join(watney_bringup_share_dir, 'launch', 'ldlidar_slam.launch.py')
 
     # Define the path to the custom nav2 params file
-    nav2_params_file = os.path.join(watney_bringup_share_dir, 'params', 'nav2_gary_params.yaml')
+    # nav2_params_file = os.path.join(watney_bringup_share_dir, 'params', 'nav2_gary_params.yaml')
 
     # Define the path to the nav2_bringup navigation launch file
     nav2_launch_file = os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'navigation_launch.py')
@@ -77,7 +77,7 @@ def generate_launch_description():
     # Include nav2_bringup navigation launch file with custom params
     nav2_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(nav2_launch_file),
-            launch_arguments={'params_file': nav2_params_file}.items()
+            # launch_arguments={'params_file': nav2_params_file}.items()
         )
 
     # Throttle LiDAR topic
