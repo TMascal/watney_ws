@@ -14,7 +14,7 @@ public:
     : Node("camera_viewer") {
         // Create the subscription to the image topic
         subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "camera/image_raw", 10,
+            "image_raw", 10,
             std::bind(&CameraViewer::imageCallback, this, std::placeholders::_1)
         );
         cv::namedWindow("Camera Viewer", cv::WINDOW_AUTOSIZE);

@@ -21,8 +21,8 @@ int main(int argc, char * argv[]) {
         return -1;
     }
 
-    int desired_width = 2592;  // Hardcoded width
-    int desired_height = 1944; // Hardcoded height
+    int desired_width = 1280;  // Hardcoded width
+    int desired_height = 720; // Hardcoded height
     cap.set(cv::CAP_PROP_FRAME_WIDTH, desired_width);
     cap.set(cv::CAP_PROP_FRAME_HEIGHT, desired_height);
 
