@@ -1,4 +1,4 @@
-#!/home/mark/ros2-humble-env/bin/python3
+#!/home/pi/ros2-humble-env/bin/python3
 # File Meamt to Connect ROS Services to process, and store camera data
 # Timothy Mascal
 # Created 3/14/25

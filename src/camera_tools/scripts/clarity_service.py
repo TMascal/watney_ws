@@ -1,4 +1,4 @@
-#!/home/mark/ros2-humble-env/bin/python3
+#!/home/pi/ros2-humble-env/bin/python3
 
 import rclpy
 from cv_bridge import CvBridge

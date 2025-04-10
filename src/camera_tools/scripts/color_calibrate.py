@@ -1,4 +1,4 @@
-#!/home/mark/ros2-humble-env/bin/python3
+#!/home/pi/ros2-humble-env/bin/python3
 
 import cv2
 import numpy as np
