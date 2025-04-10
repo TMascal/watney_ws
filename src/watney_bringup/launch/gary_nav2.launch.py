@@ -69,6 +69,13 @@ def generate_launch_description():
             parameters=[ekf_param_file, {'frequency': LaunchConfiguration('frequency')}]
         )
 
+    laser_filter = Node(
+            package="laser_filters",
+            executable="scan_to_scan_filter_chain",
+            parameters=[
+                os.path.join(get_package_share_directory('watney_bringup'), 'params', 'box.yaml')],
+        )
+
     # Include ldlidar_slam launch file
     ldlidar_slam_launch = IncludeLaunchDescription(
             PythonLaunchDescriptionSource(ldlidar_slam_launch_file)
@@ -110,11 +117,12 @@ def generate_launch_description():
     ld.add_action(TimerAction(period=4.0, actions=[imu_filter_node]))  # Wait 5 seconds before launching imu_filter_node
     # ld.add_action(TimerAction(period=4.0, actions=[imu_complementary_node]))  # Wait 10 seconds before launching imu_complementary_node
     ld.add_action(TimerAction(period=5.0, actions=[robot_localizaton_node]))  # Wait 10 seconds before launching robot_localizaton_node
+    ld.add_action(TimerAction(period=8.0, actions=[laser_filter]))  # Wait 10 seconds before launching laser_filter
     ld.add_action(TimerAction(period=10.0, actions=[ldlidar_slam_launch]))  # Wait 15 seconds before including ldlidar_slam_launch
     ld.add_action(TimerAction(period=12.0, actions=[lidar_throttle_node]))  # Wait 20 seconds before launching lidar_throttle_node
     ld.add_action(TimerAction(period=15.0, actions=[nav2_launch]))  # Wait 15 seconds before including nav2_launch
     ld.add_action(TimerAction(period=20.0, actions=[rviz2_node]))  # Wait 20 seconds before launching rviz2_node
-    ld.add_action(foxglove_launch)
+    # ld.add_action(foxglove_launch)
     
     return ld
 
