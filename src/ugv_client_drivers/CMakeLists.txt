@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(ugv_drivers)
+project(ugv_client_drivers)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -23,29 +23,5 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-
-#add_executable(take_picture_client src/take_picture_client.cpp)
-#ament_target_dependencies(take_picture_client
-#        rclcpp
-#        OpenCV
-#        cv_bridge
-#        camera_tools_interfaces
-#)
-
-## Install the targets
-#install(TARGETS
-#        take_picture_client
-#        change_exposure_server
-#        hdr_photo_server
-#        take_picture_server
-#        DESTINATION lib/${PROJECT_NAME})
-
-install(PROGRAMS
-        DESTINATION lib/${PROJECT_NAME})
-
-install(DIRECTORY launch
-        DESTINATION share/${PROJECT_NAME}
-)
-
 
 ament_package()
