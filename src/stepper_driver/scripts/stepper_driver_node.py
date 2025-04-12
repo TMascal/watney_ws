@@ -5,113 +5,116 @@ import rclpy
 from rclpy.node import Node
 from std_srvs.srv import Trigger
 
-# Set DEBUG_MODE if --debug flag is provided
 DEBUG_MODE = "--debug" in sys.argv
 
 if DEBUG_MODE:
-    print("Debug mode enabled: using dummy GPIO.")
-    class DummyGPIO:
-        BCM = "BCM"
-        OUT = "OUT"
-        IN = "IN"
-        HIGH = 1
-        LOW = 0
-        PUD_UP = "PUD_UP"
-        def setmode(self, mode):
-            print(f"DEBUG: set GPIO mode to {mode}")
-        def setup(self, pin, mode, pull_up_down=None):
-            print(f"DEBUG: setup pin {pin} as {mode} with pull_up_down={pull_up_down}")
-        def output(self, pin, state):
-            print(f"DEBUG: set pin {pin} to {state}")
-        def input(self, pin):
-            print(f"DEBUG: read pin {pin}")
-            # Simulate payload done (for payload_done_pin) and endstop triggered (for endstop_pin) immediately.
-            return self.HIGH
-        def cleanup(self):
-            print("DEBUG: cleanup GPIO")
-    GPIO = DummyGPIO()
+    print("Debug mode enabled: using dummy devices.")
+
+    class DummyDevice:
+        def __init__(self, pin, **kwargs):
+            self.pin = pin
+            self.state = False
+            print(f"DEBUG: Initialized dummy device at pin {pin} with {kwargs}")
+
+        def on(self):
+            self.state = True
+            print(f"DEBUG: Device at pin {self.pin} set ON")
+
+        def off(self):
+            self.state = False
+            print(f"DEBUG: Device at pin {self.pin} set OFF")
+
+        @property
+        def value(self):
+            print(f"DEBUG: Reading dummy device at pin {self.pin}")
+            # Always simulate HIGH for inputs
+            return 1
+
+    DigitalOutputDevice = DummyDevice
+    DigitalInputDevice = DummyDevice
+
 else:
-    import RPi.GPIO as GPIO
+    from gpiozero import DigitalOutputDevice, DigitalInputDevice
 
 class PayloadDeployer(Node):
     def __init__(self):
         super().__init__('payload_deployer')
-        # Create the deploy service using the standard Trigger service.
+        # Create the deploy service.
         self.srv = self.create_service(Trigger, 'deploy_payload', self.deploy_callback)
 
-        # Define GPIO pins (BCM numbering)
-        self.STEP_PIN = 18       # Pin that sends step pulses to the A4988
-        self.DIR_PIN = 23        # Pin that sets motor direction (HIGH for extend, LOW for retract)
-        self.ENABLE_PIN = 24     # Pin to enable/disable the driver (LOW = enabled)
-        self.ENDSTOP_PIN = 25    # Input pin for the endstop switch
-        self.PAYLOAD_DONE_PIN = 12  # Input pin for payload done signal
+        # Define pins using BCM numbering.
+        self.STEP_PIN = 18        # Step pulse pin.
+        self.DIR_PIN = 23         # Motor direction.
+        self.ENABLE_PIN = 24      # Motor enable (LOW = enabled).
+        self.ENDSTOP_PIN = 25     # Endstop input.
+        self.PAYLOAD_DONE_PIN = 12  # Payload done input.
 
-        # Initialize GPIO library and pin modes.
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(self.STEP_PIN, GPIO.OUT)
-        GPIO.setup(self.DIR_PIN, GPIO.OUT)
-        GPIO.setup(self.ENABLE_PIN, GPIO.OUT)
-        GPIO.setup(self.ENDSTOP_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        GPIO.setup(self.PAYLOAD_DONE_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        # Setup output devices.
+        # For the ENABLE output, active_high is False because LOW = enabled.
+        self.step_output = DigitalOutputDevice(self.STEP_PIN)
+        self.direction = DigitalOutputDevice(self.DIR_PIN)
+        self.enable = DigitalOutputDevice(self.ENABLE_PIN, active_high=False)
+        # Setup input devices with pull-ups.
+        self.endstop = DigitalInputDevice(self.ENDSTOP_PIN, pull_up=True)
+        self.payload_done = DigitalInputDevice(self.PAYLOAD_DONE_PIN, pull_up=True)
 
-        # Enable the stepper driver (A4988 is enabled when ENABLE_PIN is LOW)
-        GPIO.output(self.ENABLE_PIN, GPIO.LOW)
+        # Enable the stepper driver.
+        self.enable.on()
 
-        # Movement parameters
-        self.step_delay = 0.15    # 0.15 sec delay: each step takes 0.3 sec total (1 rpm with 200 steps per revolution)
+        # Movement parameters.
+        self.step_delay = 0.15    # Delay for each half-step pulse.
         self.steps_forward = 200  # One full revolution equals 200 steps.
 
     def step_motor(self, steps):
-        """Pulse the step pin a given number of times to move the motor."""
-        if DEBUG_MODE:
-            for i in range(steps):
-                print(f"DEBUG: Pulsing STEP_PIN (simulation), step {i+1}/{steps}")
+        """Pulse the step pin to move the motor a specified number of steps."""
+        for i in range(steps):
+            if DEBUG_MODE:
+                self.get_logger().info(f"DEBUG: Would pulse STEP_PIN, step {i+1}/{steps}")
                 time.sleep(self.step_delay)
-        else:
-            for i in range(steps):
-                GPIO.output(self.STEP_PIN, GPIO.HIGH)
+            else:
+                self.step_output.on()
                 time.sleep(self.step_delay)
-                GPIO.output(self.STEP_PIN, GPIO.LOW)
+                self.step_output.off()
                 time.sleep(self.step_delay)
 
     def deploy_callback(self, request, response):
         """
-        Service callback triggered by a deployment request.
-        Deployment phases:
-          1. Extend the lead screw fully.
-          2. Wait for payload action to complete.
-          3. Retract the lead screw until the endstop is triggered.
+        Deployment sequence:
+          1. Extend the lead screw.
+          2. Wait for payload operation to complete.
+          3. Retract until the endstop is triggered.
         """
         try:
-            # 1. Extend lead screw
+            # 1. Extend lead screw.
             self.get_logger().info("Deploy request received. Extending lead screw...")
-            GPIO.output(self.DIR_PIN, GPIO.HIGH)  # Set direction for extension.
+            self.direction.on()  # Set direction for extension.
             self.step_motor(self.steps_forward)
 
-            # 2. Wait for payload to complete its action.
+            # 2. Wait for payload completion.
             self.get_logger().info("Waiting for payload operation to complete...")
             if DEBUG_MODE:
-                self.get_logger().info("DEBUG: Simulating payload operation complete.")
-                time.sleep(1)  # Simulate a short delay.
+                self.get_logger().info("DEBUG: Simulating payload completion.")
+                time.sleep(1)
             else:
-                while GPIO.input(self.PAYLOAD_DONE_PIN) == GPIO.LOW:
+                # Wait until payload_done becomes HIGH.
+                while self.payload_done.value == 0:
                     time.sleep(0.1)
                 self.get_logger().info("Payload operation complete.")
 
-            # 3. Retract lead screw until the endstop is triggered.
+            # 3. Retract lead screw until endstop triggered.
             self.get_logger().info("Retracting lead screw until endstop is triggered...")
-            GPIO.output(self.DIR_PIN, GPIO.LOW)  # Set direction for retraction.
+            self.direction.off()  # Set direction for retraction.
             if DEBUG_MODE:
-                self.get_logger().info("DEBUG: Simulating endstop triggered immediately.")
+                self.get_logger().info("DEBUG: Simulating immediate endstop trigger.")
                 time.sleep(1)
             else:
-                # Assuming the endstop switch pulls the pin LOW when triggered.
-                while GPIO.input(self.ENDSTOP_PIN) == GPIO.HIGH:
-                    GPIO.output(self.STEP_PIN, GPIO.HIGH)
+                # Assuming endstop goes LOW when triggered.
+                while self.endstop.value == 1:
+                    self.step_output.on()
                     time.sleep(self.step_delay)
-                    GPIO.output(self.STEP_PIN, GPIO.LOW)
+                    self.step_output.off()
                     time.sleep(self.step_delay)
-                self.get_logger().info("Endstop triggered. Retracted successfully.")
+                self.get_logger().info("Endstop triggered. Retraction complete.")
 
             response.success = True
             response.message = "Payload deployed and retracted successfully."
@@ -122,8 +125,8 @@ class PayloadDeployer(Node):
         return response
 
     def destroy_node(self):
-        """Cleanup GPIO before shutting down the node."""
-        GPIO.cleanup()
+        self.get_logger().info("Cleaning up devices.")
+        # gpiozero devices require no explicit cleanup.
         super().destroy_node()
 
 def main(args=None):
