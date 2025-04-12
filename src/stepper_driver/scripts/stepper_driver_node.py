@@ -58,8 +58,8 @@ class PayloadDeployer(Node):
         GPIO.output(self.ENABLE_PIN, GPIO.LOW)
 
         # Movement parameters
-        self.step_delay = 0.001      # Delay between steps (in seconds) - adjust for desired speed.
-        self.steps_forward = 1000    # Number of steps to fully extend. Tune to your hardware.
+        self.step_delay = 0.15    # 0.15 sec delay: each step takes 0.3 sec total (1 rpm with 200 steps per revolution)
+        self.steps_forward = 200  # One full revolution equals 200 steps.
 
     def step_motor(self, steps):
         """Pulse the step pin a given number of times to move the motor."""
