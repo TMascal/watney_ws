@@ -47,7 +47,7 @@ class PayloadDeployer(Node):
         self.PAYLOAD_DONE_PIN = 12  # Input pin for payload done signal
 
         # Initialize GPIO library and pin modes.
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.STEP_PIN, GPIO.OUT)
         GPIO.setup(self.DIR_PIN, GPIO.OUT)
         GPIO.setup(self.ENABLE_PIN, GPIO.OUT)
