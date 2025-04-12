@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(camera_tools_interfaces REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -32,13 +33,15 @@ endif()
 #        camera_tools_interfaces
 #)
 
+# Add the change_exposure_server executable
+add_executable(change_exposure_server src/change_exposure_server.cpp)
+ament_target_dependencies(change_exposure_server
+        rclcpp camera_tools_interfaces)
+
 ## Install the targets
-#install(TARGETS
-#        take_picture_client
-#        change_exposure_server
-#        hdr_photo_server
-#        take_picture_server
-#        DESTINATION lib/${PROJECT_NAME})
+install(TARGETS
+        change_exposure_server
+        DESTINATION lib/${PROJECT_NAME})
 
 install(PROGRAMS
         DESTINATION lib/${PROJECT_NAME})

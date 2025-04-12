@@ -1,5 +1,5 @@
 <launch>
-    <node pkg="plant_cv" exec="arducam_driver" name="cam_driver" namespace="top_cam"/>
+    <node pkg="ugv_client_drivers" exec="GStream2ROS.py" name="cam_driver" namespace="top_cam"/>
     <node pkg="camera_tools" exec="image_top_level.py" name="vision_system" namespace="top_cam"/>
     <node pkg="camera_tools" exec="hdr_photo.py" name="hdr_process" namespace="top_cam"/>
     <node pkg="camera_tools" exec="change_exposure_server" name="change_exposure" namespace="top_cam"/>
