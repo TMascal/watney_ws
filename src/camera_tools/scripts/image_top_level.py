@@ -228,7 +228,7 @@ class VisionSystem(Node):
         future.add_done_callback(lambda fut: done_evt.set())
 
         # Wait for up to 5 seconds for the future to complete
-        if not done_evt.wait(timeout=5.0):
+        if not done_evt.wait(timeout=30.0):
             self.get_logger().error("Timeout waiting for HDR service response")
             return None
 

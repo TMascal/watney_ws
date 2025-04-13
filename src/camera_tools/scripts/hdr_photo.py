@@ -103,7 +103,7 @@ class MyServiceClientNode(Node):
 
         return response
 
-    def take_3_pictures(self, exposure_values=(0, 0, 0), frames_to_wait=3):
+    def take_3_pictures(self, exposure_values=(0, 0, 0), frames_to_wait=15):
 
         images = []
         for exposure in exposure_values:

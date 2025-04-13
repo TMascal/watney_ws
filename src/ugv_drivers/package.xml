@@ -9,6 +9,9 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_python</buildtool_depend>
+  <build_depend>camera_tools_interfaces</build_depend>
+  <exec_depend>camera_tools_interfaces</exec_depend>
+
 
   <depend>rclcpp</depend>
   <depend>rclpy</depend>

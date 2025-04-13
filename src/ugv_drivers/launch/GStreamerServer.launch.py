@@ -3,6 +3,7 @@ import glob
 import subprocess
 from launch import LaunchDescription
 from launch.actions import ExecuteProcess, OpaqueFunction
+from launch_ros.actions import Node  # Import Node action for ROS nodes
 
 def get_id_path(device):
     """
@@ -24,10 +25,6 @@ def map_camera_devices(camera_mapping):
     """
     Scans /dev/video* and returns a dictionary mapping camera labels to
     their device nodes if the device's ID_PATH contains the expected substring.
-
-    :param camera_mapping: A dict mapping labels to expected USB path substrings.
-                           For example: {"front_cam": "1-1.1.2", "side_cam": "1-1.1.3", "top_cam": "1-1.1.4"}
-    :return: Dict mapping each label (if matched) to its device node (e.g. "/dev/video0").
     """
     mapped_devices = {}
     for device in glob.glob("/dev/video*"):
@@ -52,24 +49,36 @@ def launch_setup(context, *args, **kwargs):
         print(f"Mapping: {label} -> {dev}")
 
     actions = []
-    # For each camera found, build a GStreamer pipeline command.
-    # In this example, the same pipeline command is used for all cameras. You can customize it per camera label if needed.
-    # Example command: capture MJPEG images, decode, convert,
-    # encode to H.264, packetize into RTP, and send via UDP.
-    command = (
-        f'gst-launch-1.0 -v v4l2src device={devices["front_cam"]} ! '
-        f'"image/jpeg, width=1280, height=720, framerate=30/1" ! '
-        'jpegdec ! '
-        'videoconvert ! '
-        'x264enc bitrate=1500 speed-preset=superfast tune=zerolatency ! '
-        'h264parse ! '
-        'rtph264pay config-interval=1 pt=96 ! '
-        'udpsink host=10.33.175.6 port=5000'
-    )
+
+    # Example: Build a GStreamer pipeline command for a camera (e.g., front_cam).
+    if "front_cam" in devices:
+        command = (
+            f'gst-launch-1.0 -v v4l2src device={devices["front_cam"]} ! '
+            f'"image/jpeg, width=1280, height=720, framerate=30/1" ! '
+            'jpegdec ! '
+            'videoconvert ! '
+            'x264enc bitrate=1500 speed-preset=superfast tune=zerolatency ! '
+            'h264parse ! '
+            'rtph264pay config-interval=1 pt=96 ! '
+            'udpsink host=192.168.0.105 port=5000'
+        )
+        actions.append(
+            ExecuteProcess(
+                cmd=['bash', '-c', command],
+                output='screen'
+            )
+        )
+    else:
+        print("front_cam device not found in mapping.")
+
+    # Now, add the node equivalent to the XML launch file for change_exposure_server.
     actions.append(
-        ExecuteProcess(
-            cmd=['bash', '-c', command],
-            output='screen'
+        Node(
+            package="ugv_drivers",
+            executable="change_exposure_server",
+            name="change_exposure",
+            namespace="top_cam",
+            output="screen"
         )
     )
 
