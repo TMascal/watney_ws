@@ -17,6 +17,11 @@ std::atomic<bool> running(false);
 
 void deploy_camera_logic(double distance) {
     int ret;
+    bool reverse = false;
+    if (distance < 0) {
+        reverse = true;
+        distance = -distance;  // Use absolute distance for steps calculation
+    }
     // Calculate total number of steps for the given distance (in mm)
     int total_steps = static_cast<int>(distance * STEPS_PER_MM);
     int step_count = 0;
@@ -37,7 +42,7 @@ void deploy_camera_logic(double distance) {
         deploying = false;
         return;
     }
-    // Request lines as outputs
+    // Request step line as output
     ret = gpiod_line_request_output(step_line, "deploy_camera", 0);
     if (ret < 0) {
         RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to request step line as output");
@@ -45,7 +50,8 @@ void deploy_camera_logic(double distance) {
         deploying = false;
         return;
     }
-    ret = gpiod_line_request_output(dir_line, "deploy_camera", 1);
+    // Request direction line as output with initial value based on whether rolling in reverse or forward
+    ret = gpiod_line_request_output(dir_line, "deploy_camera", reverse ? 0 : 1);
     if (ret < 0) {
         RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to request direction line as output");
         gpiod_line_release(step_line);
@@ -53,7 +59,8 @@ void deploy_camera_logic(double distance) {
         deploying = false;
         return;
     }
-    RCLCPP_INFO(rclcpp::get_logger("deploy_camera_service"), "Starting step signal generation for %.2f mm (total steps: %d)", distance, total_steps);
+    RCLCPP_INFO(rclcpp::get_logger("deploy_camera_service"), "Starting step signal generation for %.2f mm (%s, total steps: %d)", 
+                 distance, (reverse ? "reverse" : "forward"), total_steps);
     running = true;
     struct timespec delay = {0, 500000}; // 500 µs delay
 
