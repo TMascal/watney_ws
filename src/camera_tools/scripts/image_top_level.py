@@ -57,6 +57,7 @@ class VisionSystem(Node):
         self.get_logger().info('Vision Controller Node Initialized')
 
     def video_callback(self, msg):
+        # self.get_logger().info("Updating Frame")
         self.frame = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
 
     def process_video(self, request, response):

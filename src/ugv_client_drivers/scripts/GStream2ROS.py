@@ -1,4 +1,4 @@
-#!/home/mark/ros2-humble-env/bin/python3
+#!/usr/bin/env python3
 # Sourced from GSCam Tutorials, April 12, 2025 and modified by Tim Mascal
 
 import cv2
@@ -24,14 +24,15 @@ class GStreamerPublisher(Node):
         Gst.init(None)
         self.loop = GLib.MainLoop()
 
-        # Define the GStreamer pipeline string, ending with an appsink.
+        # Revised GStreamer pipeline string with an explicit caps filter to output BGR frames.
         self.pipeline_str = (
-            'udpsrc port=5000 caps="application/x-rtp, encoding-name=H264, payload=96" ! '
-            'rtph264depay ! '
-            'avdec_h264 ! '
-            'videoconvert ! '
+            'udpsrc port=5000 caps="application/x-rtp, media=video, clock-rate=90000, '
+            'encoding-name=H264, payload=96" ! '
+            'rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! '
+            'video/x-raw, format=BGR ! '
             'appsink name=sink emit-signals=true max-buffers=1 drop=true'
         )
+
         self.get_logger().info(f"Creating GStreamer pipeline: {self.pipeline_str}")
         self.pipeline = Gst.parse_launch(self.pipeline_str)
         self.appsink = self.pipeline.get_by_name('sink')
@@ -39,13 +40,16 @@ class GStreamerPublisher(Node):
             self.get_logger().error("Could not retrieve appsink from the pipeline.")
             return
 
+        # Connect signal to process new samples
         self.appsink.connect('new-sample', self.on_new_sample)
         self.get_logger().info("Setting pipeline to PLAYING state.")
         self.pipeline.set_state(Gst.State.PLAYING)
 
+        # Schedule a periodic spin to allow ROS callbacks to run.
         GLib.timeout_add_seconds(1, self.spin_once)
 
     def spin_once(self):
+        # Process one ROS callback, non-blocking.
         if rclpy.ok():
             rclpy.spin_once(self, timeout_sec=0)
         return True
@@ -65,11 +69,13 @@ class GStreamerPublisher(Node):
 
                 result, mapinfo = buf.map(Gst.MapFlags.READ)
                 if result:
+                    # Convert the data into a numpy array and reshape to frame dimensions.
                     frame = np.frombuffer(mapinfo.data, np.uint8)
                     try:
-                        frame = cv2.cvtColor(frame.reshape((height * 3 // 2, width)), cv2.COLOR_YUV2BGR_I420)
+                        # Since the output is BGR, we convert directly if needed.
+                        frame = frame.reshape((height, width, 3))
                     except Exception as e:
-                        self.get_logger().error(f"Error converting frame: {e}")
+                        self.get_logger().error(f"Error reshaping frame: {e}")
                     buf.unmap(mapinfo)
 
                     msg = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
@@ -93,7 +99,7 @@ def main(args=None):
 
     try:
         node.get_logger().info("Running GStreamerPublisher... Press Ctrl-C to exit.")
-        node.loop.run()  # This will block until node.loop.quit() is called.
+        node.loop.run()  # Block until node.loop.quit() is called.
     except Exception as e:
         node.get_logger().error(f"Unexpected error: {e}")
     finally:

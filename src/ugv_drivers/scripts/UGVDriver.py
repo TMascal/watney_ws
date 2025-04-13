@@ -40,6 +40,8 @@ class UGVDriver(Node):
         new_exposure_value = request.exposure_value
         response.success = False  # Default to False
 
+        self.get_logger().info(f"The Exposure Value Received is {new_exposure_value}")
+
         if new_exposure_value == 0:
             # If the exposure value is zero, we interpret that as a request to set
             # the camera to automatic exposure mode. In this case, we call update_exposure
@@ -72,7 +74,9 @@ class UGVDriver(Node):
             'jpegdec ! videoconvert ! '
             'x264enc bitrate=1500 speed-preset=superfast tune=zerolatency ! '
             'h264parse ! rtph264pay config-interval=1 pt=96 ! '
-            'udpsink host=10.33.175.6 port=5000'
+            'udpsink host= 192.168.0.105 port=5000'
+            # Eagle Net, 10.33.175.6, TP-LINK: 192.168.0.105
+
         )
 
         self.get_logger().info("Creating sender pipeline (attempting extra-controls update with extra-controls listing)...")

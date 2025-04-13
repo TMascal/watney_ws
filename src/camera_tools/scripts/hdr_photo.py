@@ -89,7 +89,7 @@ class MyServiceClientNode(Node):
         future.add_done_callback(lambda fut: done_evt.set())
 
         # Wait for up to 5 seconds for the future to complete.
-        if not done_evt.wait(timeout=5.0):
+        if not done_evt.wait(timeout=10.0):
             self.get_logger().error("Timeout waiting for service response")
             return None
 
@@ -103,7 +103,7 @@ class MyServiceClientNode(Node):
 
         return response
 
-    def take_3_pictures(self, exposure_values=(0, 0, 0), frames_to_wait=15):
+    def take_3_pictures(self, exposure_values=(100, 1000, 2000), frames_to_wait=5):
 
         images = []
         for exposure in exposure_values:
@@ -120,7 +120,7 @@ class MyServiceClientNode(Node):
             target_count = baseline + frames_to_wait
             while self.frame_counter < target_count:
                 # Wait with a timeout to prevent infinite blocking.
-                self.frame_updated_event.wait(timeout=1.0)
+                self.frame_updated_event.wait(timeout=5.0)
                 self.frame_updated_event.clear()
 
             self.get_logger().info(f"Received {frames_to_wait} new frame events after setting exposure {exposure}")
@@ -133,6 +133,7 @@ class MyServiceClientNode(Node):
 
 
     def process_hdr(self, exposure_values=None):
+        self.get_logger().info(f"Process HDR Exposure Value: {exposure_values}")
         if exposure_values is None:
             exposure_values = [100, 1000, 2000]
             exposure_times = np.array([0.01, 0.1, 0.2], dtype=np.float32)  # Converted from 100ms, 1000ms, and 2000ms

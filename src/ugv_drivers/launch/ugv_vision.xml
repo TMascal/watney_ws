@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="ugv_drivers" exec="UGVDriver.py" name="change_exposure" namespace="top_cam"/>
+</launch>
