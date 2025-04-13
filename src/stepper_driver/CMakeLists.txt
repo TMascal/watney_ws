@@ -11,6 +11,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 
 include_directories(/usr/include)
 
@@ -19,10 +20,16 @@ if(NOT GPIOD_LIBRARY)
   message(FATAL_ERROR "libgpiod not found. Please install libgpiod-dev")
 endif()
 
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "srv/DeployCameraDistance.srv"
+)
+
 # Create Cpp executable
 add_executable(deploy_camera_node src/deploy_camera_node.cpp)
-target_link_libraries(deploy_camera_node ${GPIOD_LIBRARY})
 ament_target_dependencies(deploy_camera_node rclcpp std_srvs)
+target_link_libraries(deploy_camera_node ${GPIOD_LIBRARY})
+
+rosidl_target_interfaces(deploy_camera_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # Install Cpp executables
 install(TARGETS
@@ -31,7 +38,7 @@ install(TARGETS
 )
 
 # python compatible
-ament_python_install_package(${PROJECT_NAME})
+# ament_python_install_package(${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

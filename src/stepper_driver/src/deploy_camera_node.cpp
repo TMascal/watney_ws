@@ -1,21 +1,26 @@
 #include <rclcpp/rclcpp.hpp>
-#include <std_srvs/srv/trigger.hpp>
 #include <gpiod.h>
 #include <signal.h>
 #include <time.h>
 #include <thread>
 #include <atomic>
+#include "stepper_driver/srv/deploy_camera_distance.hpp"  // Custom service header
 
 #define CHIPNAME "/dev/gpiochip0"
 #define STEP_PIN 18  // Step pin (BCM numbering)
 #define DIR_PIN  17  // Direction pin (BCM numbering)
+#define STEPS_PER_MM 25  // 200 steps/rev divided by 8 mm pitch
 
 // Atomic flags to avoid race conditions
 std::atomic<bool> deploying(false);
 std::atomic<bool> running(false);
 
-void deploy_camera_logic() {
+void deploy_camera_logic(double distance) {
     int ret;
+    // Calculate total number of steps for the given distance (in mm)
+    int total_steps = static_cast<int>(distance * STEPS_PER_MM);
+    int step_count = 0;
+    
     // Open the GPIO chip
     struct gpiod_chip* chip = gpiod_chip_open(CHIPNAME);
     if (!chip) {
@@ -48,20 +53,19 @@ void deploy_camera_logic() {
         deploying = false;
         return;
     }
-    RCLCPP_INFO(rclcpp::get_logger("deploy_camera_service"), "Starting step signal generation on GPIO %d", STEP_PIN);
-    // Set up signal handler (if needed) for graceful shutdown
-    // Note: ROS2 already handles SIGINT; the following loop will stop on node shutdown.
+    RCLCPP_INFO(rclcpp::get_logger("deploy_camera_service"), "Starting step signal generation for %.2f mm (total steps: %d)", distance, total_steps);
     running = true;
-    // Define a timespec for a 500 microsecond delay
-    struct timespec delay = {0, 500000}; // 500,000 ns = 500 µs
-    while (running && rclcpp::ok()) {
-        // Set step line HIGH, delay, then LOW, and delay again
+    struct timespec delay = {0, 500000}; // 500 µs delay
+
+    while (running && rclcpp::ok() && step_count < total_steps) {
+        // Generate one step pulse
         gpiod_line_set_value(step_line, 1);
-        nanosleep(&delay, NULL);
+        nanosleep(&delay, nullptr);
         gpiod_line_set_value(step_line, 0);
-        nanosleep(&delay, NULL);
+        nanosleep(&delay, nullptr);
+        step_count++;
     }
-    RCLCPP_INFO(rclcpp::get_logger("deploy_camera_service"), "Stopping step signal generation.");
+    RCLCPP_INFO(rclcpp::get_logger("deploy_camera_service"), "Completed stepping: %d/%d steps.", step_count, total_steps);
     // Clean up resources
     gpiod_line_release(step_line);
     gpiod_line_release(dir_line);
@@ -72,26 +76,31 @@ void deploy_camera_logic() {
 class DeployCameraService : public rclcpp::Node {
 public:
     DeployCameraService() : Node("deploy_camera_service") {
-        service_ = this->create_service<std_srvs::srv::Trigger>("deploy_camera", std::bind(&DeployCameraService::handle_deploy_camera, this, std::placeholders::_1, std::placeholders::_2));
+        // Update service type from Trigger to our custom DeployCameraDistance service.
+        service_ = this->create_service<stepper_driver::srv::DeployCameraDistance>(
+            "deploy_camera",
+            std::bind(&DeployCameraService::handle_deploy_camera, this, std::placeholders::_1, std::placeholders::_2)
+        );
     }
     
 private:
-    void handle_deploy_camera(const std::shared_ptr<std_srvs::srv::Trigger::Request> request,
-                              std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
-        (void)request;
+    void handle_deploy_camera(
+        const std::shared_ptr<stepper_driver::srv::DeployCameraDistance::Request> request,
+        std::shared_ptr<stepper_driver::srv::DeployCameraDistance::Response> response) 
+    {
         if (!deploying) {
             deploying = true;
-            // Launch the deploy logic in a background thread
-            std::thread(deploy_camera_logic).detach();
+            // Launch the deploy logic in a background thread using the provided distance
+            std::thread(deploy_camera_logic, request->distance).detach();
             response->success = true;
-            response->message = "Camera deployment started.";
+            response->message = "Camera deployment started for distance: " + std::to_string(request->distance) + " mm.";
         } else {
             response->success = false;
             response->message = "Camera deployment is already in progress.";
         }
     }
     
-    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr service_;
+    rclcpp::Service<stepper_driver::srv::DeployCameraDistance>::SharedPtr service_;
 };
 
 int main(int argc, char ** argv) {
