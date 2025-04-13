@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import sys
-import gi
 import time as t
 import subprocess
 import gc
-
+import gi
 gi.require_version('Gst', '1.0')
 gi.require_version('GLib', '2.0')
 from gi.repository import Gst, GLib, GObject
