@@ -66,7 +66,8 @@ def generate_launch_description():
             executable='ekf_node',
             name='ekf_filter_node',
             output='screen',
-            parameters=[ekf_param_file, {'frequency': LaunchConfiguration('frequency')}]
+            parameters=[ekf_param_file, {'frequency': LaunchConfiguration('frequency')}],
+            remappings=[('/odometry/filtered','/odom')]
         )
 
     laser_filter = Node(
