@@ -41,6 +41,8 @@ public:
     use_mag_  = this->get_parameter("use_mag").as_bool();
     double feedback_freq = this->get_parameter("feedback_frequency").as_double();
 
+    last_cmd_vel_time_ = this->get_clock()->now();
+
     // Create publishers
     read_publisher_    = this->create_publisher<std_msgs::msg::String>("/h2l_node/read", 10);
     chatter_publisher_ = this->create_publisher<std_msgs::msg::String>("/h2l_node/chatter", 10);
@@ -277,15 +279,14 @@ private:
   // Timer callback: if no cmd_vel received for 3 seconds, send zero velocity
   void checkVelocityTimeout()
   {
-    if (last_cmd_vel_time_ == rclcpp::Time(0, 0, RCL_ROS_TIME))
-      return;
     auto current_time = this->get_clock()->now();
     double time_since = (current_time - last_cmd_vel_time_).nanoseconds() / 1e9;
     if (time_since > 3.0) {
       RCLCPP_INFO(this->get_logger(), "Velocity timeout detected. Sending zero velocity.");
       auto zero_twist = std::make_shared<geometry_msgs::msg::Twist>();
       handleCmdVel(zero_twist);
-      last_cmd_vel_time_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
+      // Reset last_cmd_vel_time_ using the current time, not a zero time.
+      last_cmd_vel_time_ = current_time;
     }
   }
 
