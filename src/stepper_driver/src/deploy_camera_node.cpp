@@ -249,7 +249,7 @@ void return_camera_logic() {
             RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Error reading endstop value");
             break;
         }
-        if (endstop_value == GPIOD_LINE_VALUE_ACTIVE) {
+        if (endstop_value == GPIOD_LINE_VALUE_INACTIVE) {
             RCLCPP_INFO(rclcpp::get_logger("deploy_camera_service"), "Endstop triggered. Stopping return motion.");
             break;
         }
