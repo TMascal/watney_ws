@@ -123,7 +123,7 @@ def generate_launch_description():
     ld.add_action(TimerAction(period=12.0, actions=[lidar_throttle_node]))  # Wait 20 seconds before launching lidar_throttle_node
     ld.add_action(TimerAction(period=15.0, actions=[nav2_launch]))  # Wait 15 seconds before including nav2_launch
     ld.add_action(TimerAction(period=20.0, actions=[rviz2_node]))  # Wait 20 seconds before launching rviz2_node
-    # ld.add_action(foxglove_launch)
+    ld.add_action(foxglove_launch)
     
     return ld
 
