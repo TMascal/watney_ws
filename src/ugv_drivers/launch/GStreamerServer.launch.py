@@ -2,8 +2,8 @@
 import glob
 import subprocess
 from launch import LaunchDescription
-from launch.actions import ExecuteProcess, OpaqueFunction
-from launch_ros.actions import Node  # Import Node action for ROS nodes
+from launch.actions import OpaqueFunction
+from launch_ros.actions import Node
 
 def get_id_path(device):
     """
@@ -36,55 +36,39 @@ def map_camera_devices(camera_mapping):
     return mapped_devices
 
 def launch_setup(context, *args, **kwargs):
-    # Define the expected mapping.
-    # Update the expected substrings to match your cameras’ USB port identifiers (e.g., from udevadm info).
+    # Define the mapping criteria for cameras.
     camera_mapping = {
         "front_cam": "1.1.2",
         "side_cam":  "1.1.3",
         "top_cam":   "1.1.4"
     }
 
+    # Map the available video devices.
     devices = map_camera_devices(camera_mapping)
     for label, dev in devices.items():
         print(f"Mapping: {label} -> {dev}")
 
-    actions = []
-
-    # Example: Build a GStreamer pipeline command for a camera (e.g., front_cam).
     if "front_cam" in devices:
-        command = (
-            f'gst-launch-1.0 -v v4l2src device={devices["front_cam"]} ! '
-            f'"image/jpeg, width=1280, height=720, framerate=30/1" ! '
-            'jpegdec ! '
-            'videoconvert ! '
-            'x264enc bitrate=1500 speed-preset=superfast tune=zerolatency ! '
-            'h264parse ! '
-            'rtph264pay config-interval=1 pt=96 ! '
-            'udpsink host=192.168.0.105 port=5000'
-        )
-        actions.append(
-            ExecuteProcess(
-                cmd=['bash', '-c', command],
-                output='screen'
-            )
-        )
+        front_cam_device = devices["front_cam"]
     else:
-        print("front_cam device not found in mapping.")
+        front_cam_device = "/dev/video0"
+        print("front_cam device not found in mapping, defaulting to /dev/video0")
 
-    # Now, add the node equivalent to the XML launch file for change_exposure_server.
-    actions.append(
-        Node(
-            package="ugv_drivers",
-            executable="change_exposure_server",
-            name="change_exposure",
-            namespace="top_cam",
-            output="screen"
-        )
+    # Launch the node equivalent to the XML file, passing both parameters.
+    node = Node(
+        package="ugv_drivers",
+        executable="UGVDriver.py",  # Adjust the executable name if necessary.
+        name="change_exposure",
+        namespace="top_cam",
+        parameters=[
+            {"video_device": front_cam_device},
+            {"pipeline_port": 5000},
+            {"ip_address": "10.33.175.6"}
+        ],
+        output="screen"
     )
 
-    if not actions:
-        print("No camera devices matched the provided mapping. Check your udev attributes and mapping criteria.")
-    return actions
+    return [node]
 
 def generate_launch_description():
     return LaunchDescription([

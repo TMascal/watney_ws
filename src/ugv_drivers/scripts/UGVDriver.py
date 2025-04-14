@@ -20,6 +20,20 @@ class UGVDriver(Node):
     def __init__(self):
         super().__init__('ugv_driver')
 
+        # Declare parameters with defaults
+        self.declare_parameter('video_device_index', 0)
+        self.declare_parameter('pipeline_port', 5000)
+        self.declare_parameter('ip_address', "192.168.0.105")
+
+        # Retrieve parameter values
+        self.video_device_index = self.get_parameter('video_device_index').value
+        self.pipeline_port = self.get_parameter('pipeline_port').value
+        self.ip_address = self.get_parameter('ip_address').value
+
+        self.get_logger().info(f"Using video device: /dev/video{self.video_device_index}")
+        self.get_logger().info(f"Using pipeline port: {self.pipeline_port}")
+        self.get_logger().info(f"Using ip address: {self.ip_address}")
+
         # define callback groups
         group1 = ReentrantCallbackGroup()
 
@@ -69,16 +83,16 @@ class UGVDriver(Node):
         # Build the pipeline string.
         # Give the v4l2src element an explicit name ("myv4l2src") so we can reference it.
         pipeline_str = (
-            'v4l2src name=myv4l2src device=/dev/video0 ! '
+            f'v4l2src name=myv4l2src device=/dev/video{self.video_device_index} ! '
             'capsfilter caps="image/jpeg, width=1280, height=720, framerate=30/1" ! '
             'jpegdec ! videoconvert ! '
             'x264enc bitrate=1500 speed-preset=superfast tune=zerolatency ! '
             'h264parse ! rtph264pay config-interval=1 pt=96 ! '
-            'udpsink host= 192.168.0.105 port=5000'
+            f'udpsink host={self.ip_address} port={self.pipeline_port}'
             # Eagle Net, 10.33.175.6, TP-LINK: 192.168.0.105
 
         )
-
+        self.get_logger().info(pipeline_str)
         self.get_logger().info("Creating sender pipeline (attempting extra-controls update with extra-controls listing)...")
         self.pipeline = Gst.parse_launch(pipeline_str)
         if not self.pipeline:
