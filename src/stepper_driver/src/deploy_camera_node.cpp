@@ -94,7 +94,16 @@ void return_camera_logic() {
     // Get lines for step, direction, and endstop
     struct gpiod_line* step_line = gpiod_chip_get_line(chip, STEP_PIN);
     struct gpiod_line* dir_line = gpiod_chip_get_line(chip, DIR_PIN);
-    struct gpiod_line* endstop_line = gpiod_chip_get_line(chip, ENDSTOP_PIN);
+    // Request endstop line as input with pull-up mode
+    struct gpiod_line_request_config endstop_config = {.consumer = "return_camera",.direction = GPIOD_LINE_REQUEST_DIRECTION_INPUT,.flags = GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP};
+    ret = gpiod_line_request(endstop_line, &endstop_config, 0);
+    if(ret < 0) {
+        RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to request endstop line as input with pull-up bias");
+        gpiod_line_release(step_line);
+        gpiod_line_release(dir_line);
+        gpiod_chip_close(chip);
+        return;
+    }
     if (!step_line || !dir_line || !endstop_line) {
         RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to get one or more lines for return motion");
         if(chip) gpiod_chip_close(chip);
