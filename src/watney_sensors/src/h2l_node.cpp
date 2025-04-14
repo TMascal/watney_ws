@@ -34,7 +34,7 @@ public:
     this->declare_parameter<std::string>("port", "/dev/serial0");
     this->declare_parameter<int>("baudrate", 115200);
     this->declare_parameter<bool>("use_mag", false);
-    this->declare_parameter<double>("feedback_frequency", 25.0);
+    this->declare_parameter<double>("feedback_frequency", 100.0);
 
     port_     = this->get_parameter("port").as_string();
     baudrate_ = this->get_parameter("baudrate").as_int();
