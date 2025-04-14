@@ -272,12 +272,26 @@ class SerialNode(Node):
         linear_velocity_x = (rVel + lVel) / 2.0
         angular_velocity_z = (rVel - lVel) / width
 
-        self.delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
+        # Compute current wheel distances in meters
+        odl_m = odl_cm / 100.0
+        odr_m = odr_cm / 100.0
 
-        delta_theta = ((odr_m - self.previous_odr_m) - (odl_m - self.previous_odl_m)) / width
+        # Check if this is our very first reading
+        if self.previous_odl_m == 0.0 and self.previous_odr_m == 0.0:
+            self.previous_odl_m = odl_m
+            self.previous_odr_m = odr_m
+            delta_d = 0.0  # No movement yet
+            delta_theta = 0.0
+        else:
+            # Compute difference from previous readings
+            delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
+            delta_theta = ((odr_m - self.previous_odr_m) - (odl_m - self.previous_odl_m)) / width
 
-        self.previous_odl_m = odl_m
-        self.previous_odr_m = odr_m
+            # Update previous values
+            self.previous_odl_m = odl_m
+            self.previous_odr_m = odr_m
+
+        self.delta_d = delta_d
 
         scale_factor = 3.5
         self.x_position += self.delta_d * scale_factor * math.cos(self.theta + delta_theta / 2.0)
