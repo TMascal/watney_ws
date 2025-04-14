@@ -298,6 +298,33 @@ class SerialNode(Node):
         self.y_position += self.delta_d * scale_factor * math.sin(self.theta + delta_theta / 2.0)
         self.theta += delta_theta
 
+        # ----- Improved Covariance Estimates for Odometry -----
+        # Pose covariance: Order is [x, y, z, roll, pitch, yaw]
+        # For a flat ground robot:
+        #  - Low variance on x and y (good encoder accuracy)
+        #  - Extremely high variance on z, roll, and pitch (not observed)
+        #  - Moderate variance on yaw (subject to drift)
+        odom_pose_cov = [
+            0.02,    0.0,     0.0,     0.0,     0.0,     0.0,   # x
+            0.0,     0.02,    0.0,     0.0,     0.0,     0.0,   # y
+            0.0,     0.0,  99999.0,    0.0,     0.0,     0.0,   # z
+            0.0,     0.0,     0.0,  99999.0,    0.0,     0.0,   # roll
+            0.0,     0.0,     0.0,     0.0,  99999.0,    0.0,   # pitch
+            0.0,     0.0,     0.0,     0.0,     0.0,     0.2    # yaw
+        ]
+        
+        # Twist covariance: Order is [linear x, y, z, angular x, y, z]
+        # We trust forward linear and yaw rate measurements more,
+        # and we assign high uncertainty to unused dimensions.
+        odom_twist_cov = [
+            0.01,    0.0,     0.0,     0.0,     0.0,     0.0,   # linear x
+            0.0,     0.01,    0.0,     0.0,     0.0,     0.0,   # linear y
+            0.0,     0.0,  99999.0,    0.0,     0.0,     0.0,   # linear z
+            0.0,     0.0,     0.0,  99999.0,    0.0,     0.0,   # angular x
+            0.0,     0.0,     0.0,     0.0,  99999.0,    0.0,   # angular y
+            0.0,     0.0,     0.0,     0.0,     0.0,     0.2    # angular z
+        ]
+
         odom_msg = Odometry()
         odom_msg.header.stamp = current_time.to_msg()
         odom_msg.header.frame_id = "odom"
@@ -307,14 +334,8 @@ class SerialNode(Node):
         odom_msg.pose.pose.orientation.w = math.cos(self.theta / 2)
         odom_msg.twist.twist.linear.x = linear_velocity_x
         odom_msg.twist.twist.angular.z = angular_velocity_z
-        odom_msg.twist.covariance = [
-            0.01, 0.0, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.1, 0.0, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.1, 0.0, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.1, 0.0, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.1, 0.0,
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.05
-        ] # Filler values
+        odom_msg.pose.covariance = odom_pose_cov
+        odom_msg.twist.covariance = odom_twist_cov
 
         self.odom_publisher.publish(odom_msg)
 
