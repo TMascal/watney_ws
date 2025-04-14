@@ -9,12 +9,12 @@ ekf_filter_node:
     world_frame: "odom"
 
     # IMU
-    # imu0: "imu/data"
-    # imu0_config: [false, false, false, # Pose
-    #               false, false, true,    # Orient
-    #               false, false, false, # Lin Vel
-    #               true, true, true,    # Ang Vel
-    #               true, true, true]    # Lin Accel
+    imu0: "imu/data"
+    imu0_config: [false, false, false, # Pose
+                  false, false, true,    # Orient
+                  false, false, false, # Lin Vel
+                  true, true, true,    # Ang Vel
+                  true, true, true]    # Lin Accel
 
     # Wheel encoder velocity
     odom0: "h2l_node/wheel_odometry"
