@@ -8,25 +8,29 @@ ekf_filter_node:
     base_link_frame: "base_link"
     world_frame: "odom"
 
-    # IMU
+    # Adjust EKF update frequency to 20 Hz; this gives a bit more slack than 25 Hz,
+    # reducing the chance of missed updates if a cycle takes slightly over 40 ms.
+    frequency: 20.0
+
+    # Provide a sensor timeout to allow slight delays without immediate reset.
+    sensor_timeout: 0.2
+
+    # IMU configuration
     imu0: "imu/data"
-    imu0_config: [false, false, false, # Pose
-                  false, false, true,    # Orient
-                  false, false, false, # Lin Vel
-                  true, true, true,    # Ang Vel
-                  true, true, true]    # Lin Accel
+    imu0_config: [false, false, false,   # Ignore pose components from IMU
+                  false, false, true,     # Use yaw (orientation z) update (assume IMU heading is best)
+                  false, false, false,    # Ignore linear velocity from IMU
+                  true, true, true,       # Angular velocity x, y, z used
+                  true, true, true]       # Linear acceleration x, y, z used
+    # Limit the number of IMU messages buffered to avoid processing delays.
+    imu0_queue_size: 20
 
-    # Wheel encoder velocity
+    # Wheel Encoder (Odometry) configuration
     odom0: "h2l_node/wheel_odometry"
-    odom0_config: [true, true, false, # Pose
-                    false, false, true, # Orient
-                    true, false, false,  # Lin Vel
-                    false, false, true,  # Ang Vel
-                    false, false, false] # Lin Accel
-
-    # pose0: "pose" #This might be in the wrong frame, don't use yet
-    # pose0:_config: [true, true, false,  # Pose
-    #                 false, false, true, # Orient
-    #                 false, false, false, # Lin Vel
-    #                 false, false, false,  # Ang Vel
-    #                 false, false, false] # Lin Accel
+    odom0_config: [true,  true,  false,  # Use x, y position from wheel odometry
+                   false, false, true,   # Use heading (yaw) from wheel odometry
+                   true,  false, false,  # Use linear velocity from wheel odometry
+                   false, false, true,   # Use angular velocity from wheel odometry
+                   false, false, false]  # Ignore linear acceleration from wheel odometry
+    # Also set a reasonable queue size for odometry data.
+    odom0_queue_size: 20
