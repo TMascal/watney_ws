@@ -36,9 +36,9 @@ def generate_launch_description():
 
     # Launch high_to_low_node
     high2low_node = Node(
-            package='high_to_low',
-            executable='high_to_low_node',
-            name='high_to_low_node',
+            package='watney_sensors',
+            executable='h2l_node',
+            name='h2l_node',
             output='screen',
             # parameters=[{'feedback_frequency': LaunchConfiguration('frequency')}]
         )
