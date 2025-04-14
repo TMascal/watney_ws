@@ -74,6 +74,7 @@ def generate_launch_description():
             executable="scan_to_scan_filter_chain",
             parameters=[
                 os.path.join(get_package_share_directory('watney_bringup'), 'params', 'box.yaml')],
+            remappings=[('/scan','/ldlidar_node/scan')],
         )
 
     # Include ldlidar_slam launch file

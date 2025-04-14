@@ -65,7 +65,7 @@ def generate_launch_description():
             slam_config_path # Parameters
           ],
           remappings=[
-              ('/scan', '/ldlidar_node/scan')
+              ('/scan', '/scan_filtered')
           ]          
     )
 
