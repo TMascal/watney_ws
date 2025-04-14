@@ -54,6 +54,9 @@ class SerialNode(Node):
         self.delta_d = 0.0
         self.theta = 0.0
 
+        self.odometry_initialized = False
+
+
         self.last_cmd_vel_time = None
 
         self.set_feedback_rate(500.0)
@@ -272,22 +275,19 @@ class SerialNode(Node):
         linear_velocity_x = (rVel + lVel) / 2.0
         angular_velocity_z = (rVel - lVel) / width
 
-        # Compute current wheel distances in meters
-        odl_m = odl_cm / 100.0
-        odr_m = odr_cm / 100.0
-
-        # Check if this is our very first reading
-        if self.previous_odl_m == 0.0 and self.previous_odr_m == 0.0:
+                # Use a flag to ensure initialization happens only once
+        if not self.odometry_initialized:
             self.previous_odl_m = odl_m
             self.previous_odr_m = odr_m
             delta_d = 0.0  # No movement yet
             delta_theta = 0.0
+            self.odometry_initialized = True  # Mark that initialization is done
         else:
-            # Compute difference from previous readings
+            # Compute differences from previous readings
             delta_d = ((odl_m - self.previous_odl_m) + (odr_m - self.previous_odr_m)) / 2.0
             delta_theta = ((odr_m - self.previous_odr_m) - (odl_m - self.previous_odl_m)) / width
 
-            # Update previous values
+            # Update previous readings
             self.previous_odl_m = odl_m
             self.previous_odr_m = odr_m
 
