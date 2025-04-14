@@ -13,7 +13,7 @@ find_package(rclpy REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
-include_directories(/usr/include)
+include_directories(/usr/local/include)
 
 find_library(GPIOD_LIBRARY NAMES gpiod)
 
