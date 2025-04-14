@@ -16,9 +16,6 @@ find_package(rosidl_default_generators REQUIRED)
 include_directories(/usr/include)
 
 find_library(GPIOD_LIBRARY NAMES gpiod)
-if(NOT GPIOD_LIBRARY)
-  message(FATAL_ERROR "libgpiod not found. Please install libgpiod-dev")
-endif()
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/DeployCameraDistance.srv"
@@ -27,9 +24,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 # Create Cpp executable
 add_executable(deploy_camera_node src/deploy_camera_node.cpp)
 ament_target_dependencies(deploy_camera_node rclcpp std_srvs)
-target_link_libraries(deploy_camera_node ${GPIOD_LIBRARY})
 
-rosidl_target_interfaces(deploy_camera_node ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(deploy_camera_node ${cpp_typesupport_target} ${GPIOD_LIBRARY})
 
 # Install Cpp executables
 install(TARGETS
