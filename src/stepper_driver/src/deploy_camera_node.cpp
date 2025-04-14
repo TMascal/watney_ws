@@ -96,7 +96,13 @@ void return_camera_logic() {
     struct gpiod_line* dir_line = gpiod_chip_get_line(chip, DIR_PIN);
     struct gpiod_line* endstop_line = gpiod_chip_get_line(chip, ENDSTOP_PIN);
 
-    // Request endstop line as input with pull-up mode (without specifying direction)
+    if (!step_line || !dir_line || !endstop_line) {
+        RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to get one or more lines for return motion");
+        if(chip) gpiod_chip_close(chip);
+        return;
+    }
+
+    // Request endstop line as input with pull-up mode
     struct gpiod_line_request_config endstop_config = {
         .consumer = "return_camera",
         .flags = GPIOD_LINE_REQUEST_FLAG_BIAS_PULL_UP
@@ -109,20 +115,14 @@ void return_camera_logic() {
         gpiod_chip_close(chip);
         return;
     }
-    if (!step_line || !dir_line || !endstop_line) {
-        RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to get one or more lines for return motion");
-        if(chip) gpiod_chip_close(chip);
-        return;
-    }
-    // Request step and direction lines as outputs
+    // Request step and direction lines as outputs for return motion
     ret = gpiod_line_request_output(step_line, "return_camera", 0);
     if(ret < 0) {
         RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to request step line for return motion");
         gpiod_chip_close(chip);
         return;
     }
-    // Set the direction for reverse motion using the DIR_PIN (17).
-    // Assuming 0 corresponds to reverse.
+    // Set the direction for reverse motion using the DIR_PIN (assuming 0 corresponds to reverse)
     ret = gpiod_line_set_value(dir_line, 0);
     if(ret < 0) {
         RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to set direction for return motion on pin %d", DIR_PIN);
@@ -130,15 +130,9 @@ void return_camera_logic() {
         gpiod_chip_close(chip);
         return;
     }
-    // Request endstop line as input again if required by your workflow
-    ret = gpiod_line_request_input(endstop_line, "return_camera");
-    if(ret < 0) {
-        RCLCPP_ERROR(rclcpp::get_logger("deploy_camera_service"), "Failed to request endstop line as input");
-        gpiod_line_release(step_line);
-        gpiod_line_release(dir_line);
-        gpiod_chip_close(chip);
-        return;
-    }
+    
+    // Removed duplicate request for endstop input
+
     RCLCPP_INFO(rclcpp::get_logger("deploy_camera_service"), "Starting return motion until endstop (pin %d) is triggered.", ENDSTOP_PIN);
     struct timespec delay = {0, 500000}; // 500 µs delay
     while(rclcpp::ok()) {
