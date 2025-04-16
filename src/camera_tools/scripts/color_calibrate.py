@@ -10,7 +10,7 @@ parameters = cv2.aruco.DetectorParameters()
 K = np.array([[1000, 0, 320], [0, 1000, 240], [0, 0, 1]])  # Update K-matrix later
 dist_coeffs = np.zeros((5, 1))
 # image_path = '/home/mark/watney_ws/pictures/captured_image.jpg'
-image_path = '/home/mark/Downloads/labtest.jpg'
+image_path = '/home/mark/Pictures/top/2025-04-16_16-04-39/basic_image_2025-04-16_16-04-39.jpg'
 image = cv2.imread(image_path)
 unedited = image.copy()
 

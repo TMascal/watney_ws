@@ -21,16 +21,22 @@ class UGVDriver(Node):
         super().__init__('ugv_driver')
 
         # Declare parameters with defaults
-        self.declare_parameter('video_device_index', 0)
+        self.declare_parameter('video_device_index', "/dev/video0")
         self.declare_parameter('pipeline_port', 5000)
         self.declare_parameter('ip_address', "192.168.0.105")
+        self.declare_parameter('w', 1280)
+        self.declare_parameter("h", 720)
+        self.declare_parameter("hz", 30)
 
         # Retrieve parameter values
         self.video_device_index = self.get_parameter('video_device_index').value
         self.pipeline_port = self.get_parameter('pipeline_port').value
         self.ip_address = self.get_parameter('ip_address').value
+        self.width = self.get_parameter("w").value
+        self.height = self.get_parameter("h").value
+        self.refresh = self.get_parameter("hz").value
 
-        self.get_logger().info(f"Using video device: /dev/video{self.video_device_index}")
+        self.get_logger().info(f"Using video device: {self.video_device_index}")
         self.get_logger().info(f"Using pipeline port: {self.pipeline_port}")
         self.get_logger().info(f"Using ip address: {self.ip_address}")
 
@@ -64,6 +70,7 @@ class UGVDriver(Node):
             self.update_exposure(0, auto_exposure_value=3)
             response.success = True
             self.get_logger().info("Command executed successfully, exposure set to automatic")
+
         else:
             # For any nonzero exposure value, set the camera to manual mode (auto_exposure=1)
             # and update the exposure_time_absolute setting to new_exposure_value.
@@ -71,7 +78,6 @@ class UGVDriver(Node):
             response.success = True
             self.get_logger().info(f"Command executed successfully, exposure set to: {new_exposure_value}")
 
-        return response
 
     def GStreamerSetup(self):
         # Set initial camera controls.
@@ -83,8 +89,8 @@ class UGVDriver(Node):
         # Build the pipeline string.
         # Give the v4l2src element an explicit name ("myv4l2src") so we can reference it.
         pipeline_str = (
-            f'v4l2src name=myv4l2src device=/dev/video{self.video_device_index} ! '
-            'capsfilter caps="image/jpeg, width=1280, height=720, framerate=30/1" ! '
+            f'v4l2src name=myv4l2src device={self.video_device_index} ! '
+            f'capsfilter caps="image/jpeg, width={self.width}, height={self.height}, framerate={self.refresh}/1" ! '
             'jpegdec ! videoconvert ! '
             'x264enc bitrate=1500 speed-preset=superfast tune=zerolatency ! '
             'h264parse ! rtph264pay config-interval=1 pt=96 ! '
@@ -115,12 +121,12 @@ class UGVDriver(Node):
             self.get_logger().info("Setting initial camera controls: manual mode and exposure=100.")
             subprocess.check_call([
                 "v4l2-ctl",
-                "--device=/dev/video0",
+                f"--device={self.video_device_index}",
                 "--set-ctrl=auto_exposure=3"
             ])
             self.get_logger().info("Initial camera controls set successfully.")
         except subprocess.CalledProcessError as e:
-            self.get_logger().error("Error setting initial camera controls:", e)
+            self.get_logger().error("Error setting initial camera controls:")
 
 
     def update_exposure(self, exposure_value, auto_exposure_value):

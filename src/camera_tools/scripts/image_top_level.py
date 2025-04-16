@@ -33,8 +33,16 @@ class VisionSystem(Node):
         # Define ths node as a Servie
         self.service_ = self.create_service(VisionSystemCall, 'vision_controller', self.process_video, callback_group=group1)
 
+        # Declare parameters with defaults
+        self.declare_parameter('namespace_name', "unknown")
+
+        # Retrieve parameter values
+        self.dir_name = self.get_parameter('namespace_name').value
+
+        self.get_logger().info(f"Sending data to port: {self.dir_name}")
+
         # Subscription to the raw camera data
-        self.video_subscription = self.create_subscription(Image, 'image_raw', self.video_callback, 10, callback_group=group2)
+        self.video_subscription = self.create_subscription(Image, 'image_raw', self.video_callback, 10,  callback_group=group2)
         self.frame = None
 
         # Service Node for Clarity
@@ -67,14 +75,17 @@ class VisionSystem(Node):
         self.get_logger().info(f'Received request for ID: {aruco_id}')
 
         while True:
-            self.get_logger().info('Processing Video')
+
             # Objective 1: Take a normal picture with auto aperature adjustment
             # Must Pass Clarity -> Bightness -> Save to Raw Data Folder
             image = self.frame
 
             # Check if there is data
-            if image is None:
+            if (image is None):
+                self.get_logger().warning("Waiting on Video Frame")
                 continue
+
+            self.get_logger().info('Processing Video')
 
             # Run Through Clarity Service, and record into
             clarity_score = self.RequestClarity(image)
@@ -99,7 +110,7 @@ class VisionSystem(Node):
 
 
         # Save Photo and Test Results into Text File
-        save_path = os.path.expanduser("~/Pictures/") + self.current_time + "/"
+        save_path = os.path.expanduser("~/Pictures/") + self.dir_name + "/" + self.current_time + "/"
         os.makedirs(save_path, exist_ok=True)  # Create the directory if it doesn't exist
         img_name = "basic_image_" + self.current_time + ".jpg"
         cv2.imwrite(save_path  + img_name, image)

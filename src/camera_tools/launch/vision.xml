@@ -1,11 +1,29 @@
 <launch>
-    <node pkg="ugv_client_drivers" exec="GStream2ROS.py" name="cam_driver" namespace="top_cam"/>
-    <node pkg="camera_tools" exec="image_top_level.py" name="vision_system" namespace="top_cam"/>
-    <node pkg="camera_tools" exec="hdr_photo.py" name="hdr_process" namespace="top_cam"/>
+
+
+    <group>
+        <push-ros-namespace namespace="top_cam"/>
+            <node pkg="ugv_client_drivers" exec="GStream2ROS.py" name="cam_driver">
+                <param name="port" value="5004"/>
+            </node>
+            <node pkg="camera_tools" exec="image_top_level.py" name="vision_system">
+                    <param name = "namespace_name" value="top"/>
+            </node>
+            <node pkg="camera_tools" exec="hdr_photo.py" name="hdr_process" />
+    </group>
 
     <!--
-    <node pkg="camera_tools" exec="change_exposure_server" name="change_exposure" namespace="top_cam"/>
-    -->
+        <group>
+            <push-ros-namespace namespace="side_cam"/>
+            <node pkg="ugv_client_drivers" exec="GStream2ROS.py" name="cam_driver">
+                <param name="port" value="5002"/>
+            </node>
+            <node pkg="camera_tools" exec="image_top_level.py" name="vision_system">
+                <param name = "namespace_name" value="side"/>
+            </node>
+            <node pkg="camera_tools" exec="hdr_photo.py" name="hdr_process"/>
+        </group>
+        -->
 
-    <node pkg="camera_tools" exec="clarity_service.py" name="clarity" namespace="analysis"/>
-</launch>
+        <node pkg="camera_tools" exec="clarity_service.py" name="clarity" namespace="analysis"/>
+    </launch>

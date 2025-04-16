@@ -20,13 +20,21 @@ class GStreamerPublisher(Node):
         self.publisher_ = self.create_publisher(Image, 'image_raw', 0)
         self.bridge = CvBridge()
 
+        # Declare parameters with defaults
+        self.declare_parameter('port', 5000)
+
+        # Retrieve parameter values
+        self.port = self.get_parameter('port').value
+
+        self.get_logger().info(f"Sending data to port: {self.port}")
+
         # Initialize GStreamer
         Gst.init(None)
         self.loop = GLib.MainLoop()
 
         # Revised GStreamer pipeline string with an explicit caps filter to output BGR frames.
         self.pipeline_str = (
-            'udpsrc port=5000 caps="application/x-rtp, media=video, clock-rate=90000, '
+            f'udpsrc port={self.port} caps="application/x-rtp, media=video, clock-rate=90000, '
             'encoding-name=H264, payload=96" ! '
             'rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! '
             'video/x-raw, format=BGR ! '
