@@ -5,6 +5,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from std_srvs.srv import Trigger  # Import the Trigger service
 
 class ArUcoTracker(Node):
     def __init__(self):
@@ -39,17 +40,35 @@ class ArUcoTracker(Node):
         self.yaw_integral = 0.0
 
         self.current_frame = None  # Store the latest frame
+        self.active = False  # Track whether the node is active
+
+        # Create a service to start/stop the node
+        self.service = self.create_service(Trigger, 'start_aruco_tracking', self.handle_service)
+
+    def handle_service(self, request, response):
+        """Service callback to start or stop the node."""
+        self.active = not self.active
+        if self.active:
+            self.get_logger().info("ArUco tracking started.")
+            response.message = "ArUco tracking started."
+        else:
+            self.get_logger().info("ArUco tracking stopped.")
+            response.message = "ArUco tracking stopped."
+        response.success = True
+        return response
 
     def image_callback(self, msg):
         """Callback to process incoming images from /side_cam/image_raw."""
+        if not self.active:
+            return  # Ignore images if the node is not active
         try:
             self.current_frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
             self.get_logger().error(f"Failed to convert image: {e}")
 
     def timer_callback(self):
-        if self.current_frame is None:
-            return  # Skip processing if no frame is available
+        if not self.active or self.current_frame is None:
+            return  # Skip processing if the node is not active or no frame is available
 
         frame = self.current_frame
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -93,16 +112,10 @@ class ArUcoTracker(Node):
                 self.publisher.publish(twist_msg)
                 self.get_logger().info(f"X Control: {x_control_output:.2f}, Yaw Control: {yaw_control_output:.2f}")
 
-                # Display information
-                cX, cY = int(marker_corners[0][0][0]), int(marker_corners[0][0][1])
-                cv2.putText(frame, f"ID: {ids[i][0]} X Error: {x_error:.2f}", (cX, cY - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                cv2.putText(frame, f"X Control: {x_control_output:.2f}", (cX, cY - 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-                cv2.putText(frame, f"Yaw Control: {yaw_control_output:.2f}", (cX, cY - 60), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-
-        cv2.imshow('ArUco Tracker', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            cv2.destroyAllWindows()
-            rclpy.shutdown()
+                # Stop the node if a certain condition is met (e.g., marker is centered)
+                if abs(x_error) < 5 and abs(yaw_error) < 0.1:  # Example condition
+                    self.get_logger().info("Marker aligned. Stopping ArUco tracking.")
+                    self.active = False
 
 def main(args=None):
     rclpy.init(args=args)
