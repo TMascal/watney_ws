@@ -13,6 +13,7 @@ dist_coeffs = np.zeros((5, 1))
 image_path = '/home/mark/Pictures/top/2025-04-16_16-04-39/basic_image_2025-04-16_16-04-39.jpg'
 image = cv2.imread(image_path)
 unedited = image.copy()
+aruco_edit = image.copy()
 
 
 if image is not None:
@@ -22,12 +23,12 @@ if image is not None:
     if ids is not None:
         for i in range(len(ids)):
             marker_corners = corners[i]
-            cv2.aruco.drawDetectedMarkers(image, corners, ids)
+            cv2.aruco.drawDetectedMarkers(aruco_edit, corners, ids)
             rvec, tvec, _ = cv2.aruco.estimatePoseSingleMarkers(marker_corners, 0.05, K, dist_coeffs)
-            cv2.drawFrameAxes(image, K, dist_coeffs, rvec[0], tvec[0], 0.03)
+            cv2.drawFrameAxes(aruco_edit, K, dist_coeffs, rvec[0], tvec[0], 0.03)
             distance = np.linalg.norm(tvec[0][0])
             cX, cY = int(marker_corners[0][0][0]), int(marker_corners[0][0][1])
-            cv2.putText(image, f"ID: {ids[i][0]} Dist: {distance:.2f}m", (cX, cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+            cv2.putText(aruco_edit, f"ID: {ids[i][0]} Dist: {distance:.2f}m", (cX, cY - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                         (0, 255, 0), 2)
 
 x1, y1 = (corners[1])[-1, 1, :]
@@ -248,6 +249,8 @@ pixels_aug = np.hstack([pixels, ones])   # Shape: (H*W, 4)
 # Apply the transformation.
 corrected_pixels = np.dot(pixels_aug, T)
 
+np.save('/home/mark/watney_ws/pictures/Test1/color_transform_matrix.npy', T)
+
 # Clip values to valid range and convert back to uint8.
 corrected_pixels = np.clip(corrected_pixels, 0, 255).astype(np.uint8)
 
@@ -259,7 +262,8 @@ corrected_image = cv2.cvtColor(corrected_image, cv2.COLOR_RGB2BGR)
 
 img_with_keypoints = cv2.drawKeypoints(cropped_image, grid_keypoints, None, (0, 0, 255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 
-cv2.imshow('ArUco Tracker', image)
+cv2.imshow('ArUco Tracker', aruco_edit)
+cv2.imshow("Origional", image)
 cv2.imshow('Cropped Image', bw_image)
 cv2.imshow('Keypoints', img_with_keypoints)
 cv2.imshow('Corrected Image', corrected_image)
