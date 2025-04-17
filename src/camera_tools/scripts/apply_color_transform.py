@@ -34,7 +34,7 @@ def apply_color_correction(image, transform_matrix):
 transform_matrix = np.load('/home/mark/watney_ws/pictures/Test1/color_transform_matrix.npy')
 
 # Read the input image
-image_path = '/home/mark/Pictures/top/Good_2025-04-16_14-09-42/hdr_image_2025-04-16_14-09-42.jpg'  # Update with your image path
+image_path = '/home/mark/Pictures/top/2025-04-16_17-51-50/basic_image_2025-04-16_17-51-50.jpg'  # Update with your image path
 image = cv2.imread(image_path)
 
 if image is not None:
@@ -42,7 +42,7 @@ if image is not None:
     corrected_image = apply_color_correction(image, transform_matrix)
 
     # Save the color-corrected image
-    corrected_image_path = '/home/mark/watney_ws/pictures/Test1/corrected_hdr_image.jpg'  # Update with your desired output path
+    corrected_image_path = '/home/mark/watney_ws/pictures/Test1/corrected_calibrate_image.jpg'  # Update with your desired output path
     cv2.imwrite(corrected_image_path, corrected_image)
 
     print(f"Color-corrected image saved to {corrected_image_path}")
