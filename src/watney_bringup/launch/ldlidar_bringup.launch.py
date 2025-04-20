@@ -70,16 +70,16 @@ def launch_setup(context, *args, **kwargs):
         robot_desc = infp.read()
 
     # Robot State Publisher node
-    rsp_node = Node(
-        package='robot_state_publisher',
-        executable='robot_state_publisher',
-        namespace=node_ns,
-        name='robot_state_publisher',
-        output='screen',
-        parameters=[{'robot_description': robot_desc}],
-        arguments=[urdf]
-    )
-    return_array.append(rsp_node)
+    # rsp_node = Node(
+    #     package='robot_state_publisher',
+    #     executable='robot_state_publisher',
+    #     namespace=node_ns,
+    #     name='robot_state_publisher',
+    #     output='screen',
+    #     parameters=[{'robot_description': robot_desc}],
+    #     arguments=[urdf]
+    # )
+    # return_array.append(rsp_node)
 
     # LDLidar component if required
     if container_name_val=='':
