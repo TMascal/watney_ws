@@ -14,7 +14,7 @@ ekf_filter_node:
                   false, false, true,    # Orient
                   false, false, false, # Lin Vel
                   true, true, true,    # Ang Vel
-                  true, true, true]    # Lin Accel
+                  false, false, false]    # Lin Accel
 
     # Wheel encoder velocity
     odom0: "h2l_node/wheel_odometry"
