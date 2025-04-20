@@ -74,7 +74,7 @@ def launch_setup(context, *args, **kwargs):
         package='robot_state_publisher',
         executable='robot_state_publisher',
         namespace=node_ns,
-        name='ldlidar_state_publisher',
+        name='robot_state_publisher',
         output='screen',
         parameters=[{'robot_description': robot_desc}],
         arguments=[urdf]

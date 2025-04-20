@@ -29,7 +29,7 @@ def generate_launch_description():
             output='screen',
             parameters=[
                 os.path.join(watney_bringup_share_dir, 'params', 'ekf.yaml'),
-                {'frequency': LaunchConfiguration('frequency')}
+                # {'frequency': LaunchConfiguration('frequency')}
             ],
             remappings=[('/odometry/filtered','/odom')]
         )
@@ -51,7 +51,9 @@ def generate_launch_description():
     )
 
     nav2_launch = IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(get_package_share_directory('nav2_bringup'), 'launch', 'navigation_launch.py'),
+            PythonLaunchDescriptionSource(
+                os.path.join(get_package_share_directory('nav2_bringup'), 'launch', 'navigation_launch.py')
+            ),
             launch_arguments={'params_file': os.path.join(watney_bringup_share_dir, 'params', 'nav2_gary_params.yaml')}.items()
         )
     
@@ -65,10 +67,9 @@ def generate_launch_description():
 
     ld.add_action(imu_filter_node)
     ld.add_action(robot_localizaton_node)
-    ld.add_action(laser_filter)
-    ld.add_action(slam_node)
-    ld.add_action(nav2_launch)
+    # ld.add_action(laser_filter)
+    # ld.add_action(slam_node)
+    # ld.add_action(nav2_launch)
     ld.add_action(rviz_node)
-
 
     return ld
