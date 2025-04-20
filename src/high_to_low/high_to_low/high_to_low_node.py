@@ -167,7 +167,7 @@ class SerialNode(Node):
         json_data = {
             "T": 13,
             "X": msg.linear.x,
-            "Z": msg.angular.z
+            "Z": -msg.angular.z
         }
         json_str = json.dumps(json_data)
         self.write_serial(String(data=json_str))
